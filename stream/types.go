@@ -1,7 +1,7 @@
 // Package stream provides types and services for the Bunny.net Stream API.
 package stream
 
-import "time"
+import "github.com/geraldo/bunny-sdk-go/internal"
 
 // VideoState represents the processing state of a video.
 type VideoState string
@@ -19,7 +19,7 @@ type Video struct {
 	VideoLibraryID       int64      `json:"videoLibraryId"`
 	Title                string     `json:"title"`
 	Description          string     `json:"description,omitempty"`
-	UploadDate           time.Time  `json:"uploadDate"`
+	UploadDate           internal.BunnyTime  `json:"uploadDate"`
 	Views                int64      `json:"views"`
 	Duration             int        `json:"duration"`
 	Width                int        `json:"width,omitempty"`
@@ -69,7 +69,7 @@ type MetaTag struct {
 type Library struct {
 	LibraryID                int64     `json:"libraryId"`
 	Name                     string    `json:"name"`
-	DateCreated              time.Time `json:"dateCreated"`
+	DateCreated              internal.BunnyTime `json:"dateCreated"`
 	StorageUsed              int64     `json:"storageUsed"`
 	StorageLimitGB           int64     `json:"storageLimitGB,omitempty"`
 	VideoCacheExpirationDays int       `json:"videoCacheExpirationDays"`
@@ -179,7 +179,7 @@ type FetchVideoRequest struct {
 type FetchVideoResponse struct {
 	VideoID    string     `json:"videoId"`
 	State      VideoState `json:"state"`
-	UploadDate time.Time  `json:"uploadDate"`
+	UploadDate internal.BunnyTime  `json:"uploadDate"`
 }
 
 // ReencodeRequest represents a request to re-encode a video.

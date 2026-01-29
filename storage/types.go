@@ -1,7 +1,7 @@
 // Package storage provides types and services for the Bunny.net Storage API.
 package storage
 
-import "time"
+import "github.com/geraldo/bunny-sdk-go/internal"
 
 // Zone represents a storage zone in Bunny.net.
 type Zone struct {
@@ -10,10 +10,10 @@ type Zone struct {
 	Password            string    `json:"Password,omitempty"`
 	ReadOnlyPassword    string    `json:"ReadOnlyPassword,omitempty"`
 	Region              string    `json:"Region"`
-	ReplicationRegions  string    `json:"ReplicationRegions,omitempty"`
+	ReplicationRegions  []string  `json:"ReplicationRegions,omitempty"`
 	StorageUsed         int64     `json:"StorageUsed"`
 	FilesStored         int64     `json:"FilesStored"`
-	DateModified        time.Time `json:"DateModified"`
+	DateModified        internal.BunnyTime `json:"DateModified"`
 	Deleted             bool      `json:"Deleted"`
 	PullZones           []int64   `json:"PullZones,omitempty"`
 	OriginURL           string    `json:"OriginUrl,omitempty"`
@@ -28,9 +28,9 @@ type File struct {
 	Path            string    `json:"Path"`
 	ObjectName      string    `json:"ObjectName"`
 	Length          int64     `json:"Length"`
-	LastChanged     time.Time `json:"LastChanged"`
+	LastChanged     internal.BunnyTime `json:"LastChanged"`
 	IsDirectory     bool      `json:"IsDirectory"`
-	DateCreated     time.Time `json:"DateCreated"`
+	DateCreated     internal.BunnyTime `json:"DateCreated"`
 	ServerID        int       `json:"ServerId"`
 	StorageZoneID   int64     `json:"StorageZoneId"`
 	UserID          string    `json:"UserId,omitempty"`
@@ -51,18 +51,18 @@ func (r *ZoneListResponse) HasMore() bool {
 
 // CreateZoneRequest represents a request to create a storage zone.
 type CreateZoneRequest struct {
-	Name               string `json:"Name"`
-	Region             string `json:"Region,omitempty"`
-	ReplicationRegions string `json:"ReplicationRegions,omitempty"`
-	OriginURL          string `json:"OriginUrl,omitempty"`
+	Name               string   `json:"Name"`
+	Region             string   `json:"Region,omitempty"`
+	ReplicationRegions []string `json:"ReplicationRegions,omitempty"`
+	OriginURL          string   `json:"OriginUrl,omitempty"`
 }
 
 // UpdateZoneRequest represents a request to update a storage zone.
 type UpdateZoneRequest struct {
-	ReplicationRegions string `json:"ReplicationRegions,omitempty"`
-	OriginURL          string `json:"OriginUrl,omitempty"`
-	Custom404FilePath  string `json:"Custom404FilePath,omitempty"`
-	Rewrite404To200    *bool  `json:"Rewrite404To200,omitempty"`
+	ReplicationRegions []string `json:"ReplicationRegions,omitempty"`
+	OriginURL          string   `json:"OriginUrl,omitempty"`
+	Custom404FilePath  string   `json:"Custom404FilePath,omitempty"`
+	Rewrite404To200    *bool    `json:"Rewrite404To200,omitempty"`
 }
 
 // ZoneListOptions specifies options for listing storage zones.

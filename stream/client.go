@@ -7,16 +7,20 @@ import (
 )
 
 const (
-	defaultBaseURL   = "https://video.bunnycdn.com"
-	defaultUserAgent = "bunny-sdk-go/1.0"
+	// Base API URL for library management operations (list, create, delete libraries)
+	defaultBaseAPIURL = "https://api.bunny.net"
+	// Stream API URL for video/collection operations within a library
+	defaultStreamAPIURL = "https://video.bunnycdn.com"
+	defaultUserAgent    = "bunny-sdk-go/1.0"
 )
 
 // Client is a client for the Bunny.net Stream API.
 type Client struct {
-	apiKey     string
-	httpClient HTTPClient
-	userAgent  string
-	baseURL    string
+	apiKey       string
+	httpClient   HTTPClient
+	userAgent    string
+	baseAPIURL   string // for library management (api.bunny.net)
+	streamAPIURL string // for video/collection operations (video.bunnycdn.com)
 }
 
 // HTTPClient is an interface for making HTTP requests.
@@ -41,21 +45,29 @@ func WithUserAgent(ua string) Option {
 	}
 }
 
-// WithBaseURL sets a custom base URL for the API.
-func WithBaseURL(url string) Option {
+// WithBaseAPIURL sets a custom base API URL for library management.
+func WithBaseAPIURL(url string) Option {
 	return func(c *Client) {
-		c.baseURL = url
+		c.baseAPIURL = url
+	}
+}
+
+// WithStreamAPIURL sets a custom stream API URL for video/collection operations.
+func WithStreamAPIURL(url string) Option {
+	return func(c *Client) {
+		c.streamAPIURL = url
 	}
 }
 
 // NewClient creates a new Stream API client.
-// Use the Stream Library API Key (found in the Stream library's API settings).
+// Use the Global API Key (found in Account Settings > API) for library management.
 func NewClient(apiKey string, opts ...Option) *Client {
 	c := &Client{
-		apiKey:     apiKey,
-		httpClient: http.DefaultClient,
-		userAgent:  defaultUserAgent,
-		baseURL:    defaultBaseURL,
+		apiKey:       apiKey,
+		httpClient:   http.DefaultClient,
+		userAgent:    defaultUserAgent,
+		baseAPIURL:   defaultBaseAPIURL,
+		streamAPIURL: defaultStreamAPIURL,
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -65,28 +77,37 @@ func NewClient(apiKey string, opts ...Option) *Client {
 
 // Videos returns a VideoService for managing videos in the specified library.
 func (c *Client) Videos(libraryID int64) VideoService {
-	return newVideoService(&clientAdapter{c}, libraryID)
+	return newVideoService(&streamAdapter{c}, libraryID)
 }
 
 // Libraries returns a LibraryService for managing video libraries.
 func (c *Client) Libraries() LibraryService {
-	return newLibraryService(&clientAdapter{c})
+	return newLibraryService(&baseAdapter{c})
 }
 
 // Collections returns a CollectionService for managing collections in the specified library.
 func (c *Client) Collections(libraryID int64) CollectionService {
-	return newCollectionService(&clientAdapter{c}, libraryID)
+	return newCollectionService(&streamAdapter{c}, libraryID)
 }
 
-// clientAdapter adapts Client to the httpClient interface used by services.
-type clientAdapter struct {
+// baseAdapter uses api.bunny.net for library management operations.
+type baseAdapter struct {
 	client *Client
 }
 
-func (a *clientAdapter) do(ctx context.Context, method, path string, body any, result any) error {
-	return doRequestJSON(ctx, a.client.httpClient, a.client.baseURL, a.client.apiKey, a.client.userAgent, method, path, body, result)
+func (a *baseAdapter) do(ctx context.Context, method, path string, body any, result any) error {
+	return doRequestJSON(ctx, a.client.httpClient, a.client.baseAPIURL, a.client.apiKey, a.client.userAgent, method, path, body, result)
 }
 
-func (a *clientAdapter) doRaw(ctx context.Context, method, path string, body io.Reader, contentType string) error {
-	return doRequestRaw(ctx, a.client.httpClient, a.client.baseURL, a.client.apiKey, a.client.userAgent, method, path, body, contentType)
+// streamAdapter uses video.bunnycdn.com for video/collection operations.
+type streamAdapter struct {
+	client *Client
+}
+
+func (a *streamAdapter) do(ctx context.Context, method, path string, body any, result any) error {
+	return doRequestJSON(ctx, a.client.httpClient, a.client.streamAPIURL, a.client.apiKey, a.client.userAgent, method, path, body, result)
+}
+
+func (a *streamAdapter) doRaw(ctx context.Context, method, path string, body io.Reader, contentType string) error {
+	return doRequestRaw(ctx, a.client.httpClient, a.client.streamAPIURL, a.client.apiKey, a.client.userAgent, method, path, body, contentType)
 }

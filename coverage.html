@@ -1,0 +1,2263 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>bunny-sdk-go: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/geraldo/bunny-sdk-go/auth.go (0.0%)</option>
+				
+				<option value="file1">github.com/geraldo/bunny-sdk-go/bunny.go (20.3%)</option>
+				
+				<option value="file2">github.com/geraldo/bunny-sdk-go/cmd/test/main.go (0.0%)</option>
+				
+				<option value="file3">github.com/geraldo/bunny-sdk-go/errors.go (60.0%)</option>
+				
+				<option value="file4">github.com/geraldo/bunny-sdk-go/internal/bunny-flexible-time-parser.go (100.0%)</option>
+				
+				<option value="file5">github.com/geraldo/bunny-sdk-go/internal/request.go (100.0%)</option>
+				
+				<option value="file6">github.com/geraldo/bunny-sdk-go/internal/testutil/mock.go (0.0%)</option>
+				
+				<option value="file7">github.com/geraldo/bunny-sdk-go/options.go (100.0%)</option>
+				
+				<option value="file8">github.com/geraldo/bunny-sdk-go/pagination.go (100.0%)</option>
+				
+				<option value="file9">github.com/geraldo/bunny-sdk-go/storage/client.go (64.4%)</option>
+				
+				<option value="file10">github.com/geraldo/bunny-sdk-go/storage/file.go (52.5%)</option>
+				
+				<option value="file11">github.com/geraldo/bunny-sdk-go/storage/types.go (41.7%)</option>
+				
+				<option value="file12">github.com/geraldo/bunny-sdk-go/storage/zone.go (30.6%)</option>
+				
+				<option value="file13">github.com/geraldo/bunny-sdk-go/stream/client.go (77.8%)</option>
+				
+				<option value="file14">github.com/geraldo/bunny-sdk-go/stream/collection.go (16.7%)</option>
+				
+				<option value="file15">github.com/geraldo/bunny-sdk-go/stream/library.go (15.8%)</option>
+				
+				<option value="file16">github.com/geraldo/bunny-sdk-go/stream/video.go (45.9%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package bunny
+
+import "net/http"
+
+const (
+        // HeaderAccessKey is the HTTP header used for API authentication.
+        HeaderAccessKey = "AccessKey"
+)
+
+// setAuthHeader sets the authentication header on the request.
+func setAuthHeader(req *http.Request, apiKey string) <span class="cov0" title="0">{
+        req.Header.Set(HeaderAccessKey, apiKey)
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">// Package bunny provides a Go client for the Bunny.net API.
+//
+// The SDK supports both Stream API (video management) and Storage API (zone management and file operations).
+//
+// Example usage:
+//
+//        // Create a client for Stream API
+//        streamClient := bunny.NewStreamClient("your-stream-api-key")
+//
+//        // Create a client for Storage management API
+//        client := bunny.NewClient("your-global-api-key")
+//
+//        // Create a client for Storage file operations
+//        fileClient := bunny.NewStorageClient("my-zone", "zone-password", "storage")
+package bunny
+
+import (
+        "bytes"
+        "context"
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "net/url"
+        "strconv"
+        "strings"
+
+        "github.com/geraldo/bunny-sdk-go/internal"
+)
+
+const (
+        defaultUserAgent      = "bunny-sdk-go/1.0"
+        defaultStreamBaseURL  = "https://video.bunnycdn.com"
+        defaultStorageBaseURL = "https://api.bunny.net"
+)
+
+// Client is the main Bunny.net API client for management operations.
+type Client struct {
+        apiKey         string
+        httpClient     HTTPClient
+        userAgent      string
+        streamBaseURL  string
+        storageBaseURL string
+}
+
+// NewClient creates a new Bunny.net management API client.
+// Use the Global API Key for storage zone management operations.
+func NewClient(apiKey string, opts ...Option) *Client <span class="cov8" title="1">{
+        c := &amp;Client{
+                apiKey:         apiKey,
+                httpClient:     http.DefaultClient,
+                userAgent:      defaultUserAgent,
+                streamBaseURL:  defaultStreamBaseURL,
+                storageBaseURL: defaultStorageBaseURL,
+        }
+        for _, opt := range opts </span><span class="cov8" title="1">{
+                opt(c)
+        }</span>
+        <span class="cov8" title="1">return c</span>
+}
+
+// StreamClient is a client for the Bunny.net Stream API.
+type StreamClient struct {
+        apiKey     string
+        httpClient HTTPClient
+        userAgent  string
+        baseURL    string
+}
+
+// NewStreamClient creates a new Bunny.net Stream API client.
+// Use the Stream Library API Key (found in the Stream library settings).
+func NewStreamClient(apiKey string, opts ...Option) *StreamClient <span class="cov8" title="1">{
+        // Create a temporary Client to apply options
+        c := &amp;Client{
+                httpClient:    http.DefaultClient,
+                userAgent:     defaultUserAgent,
+                streamBaseURL: defaultStreamBaseURL,
+        }
+        for _, opt := range opts </span><span class="cov8" title="1">{
+                opt(c)
+        }</span>
+
+        <span class="cov8" title="1">return &amp;StreamClient{
+                apiKey:     apiKey,
+                httpClient: c.httpClient,
+                userAgent:  c.userAgent,
+                baseURL:    c.streamBaseURL,
+        }</span>
+}
+
+// StorageClient is a client for Bunny.net Edge Storage file operations.
+type StorageClient struct {
+        zoneName   string
+        accessKey  string
+        httpClient HTTPClient
+        userAgent  string
+        baseURL    string
+}
+
+// StorageRegion represents a storage region endpoint.
+type StorageRegion string
+
+const (
+        RegionFalkenstein StorageRegion = "storage"  // Falkenstein, Germany (default)
+        RegionNewYork     StorageRegion = "ny"       // New York
+        RegionLosAngeles  StorageRegion = "la"       // Los Angeles
+        RegionSingapore   StorageRegion = "sg"       // Singapore
+        RegionSydney      StorageRegion = "syd"      // Sydney
+        RegionStockholm   StorageRegion = "se"       // Stockholm
+        RegionSaoPaulo    StorageRegion = "br"       // Sao Paulo
+        RegionJohannesburg StorageRegion = "jh"      // Johannesburg
+        RegionLondon      StorageRegion = "uk"       // London
+)
+
+// NewStorageClient creates a new Bunny.net Edge Storage client for file operations.
+// Use the Storage Zone Password (found in FTP &amp; API Access settings).
+func NewStorageClient(zoneName, accessKey string, region StorageRegion, opts ...Option) *StorageClient <span class="cov8" title="1">{
+        baseURL := fmt.Sprintf("https://%s.bunnycdn.com", region)
+
+        // Create a temporary Client to apply options
+        c := &amp;Client{
+                httpClient: http.DefaultClient,
+                userAgent:  defaultUserAgent,
+        }
+        for _, opt := range opts </span><span class="cov8" title="1">{
+                opt(c)
+        }</span>
+
+        <span class="cov8" title="1">return &amp;StorageClient{
+                zoneName:   zoneName,
+                accessKey:  accessKey,
+                httpClient: c.httpClient,
+                userAgent:  c.userAgent,
+                baseURL:    baseURL,
+        }</span>
+}
+
+// doRequest performs an HTTP request and handles errors.
+func (c *Client) doRequest(ctx context.Context, method, path string, body any, result any) error <span class="cov0" title="0">{
+        return doRequestWithClient(ctx, c.httpClient, c.storageBaseURL, c.apiKey, c.userAgent, method, path, body, result)
+}</span>
+
+// doRequest performs an HTTP request for the Stream client.
+func (c *StreamClient) doRequest(ctx context.Context, method, path string, body any, result any) error <span class="cov0" title="0">{
+        return doRequestWithClient(ctx, c.httpClient, c.baseURL, c.apiKey, c.userAgent, method, path, body, result)
+}</span>
+
+// doRequestWithClient is a shared helper for performing HTTP requests.
+func doRequestWithClient(ctx context.Context, httpClient HTTPClient, baseURL, apiKey, userAgent, method, path string, body any, result any) error <span class="cov0" title="0">{
+        fullURL := baseURL + path
+
+        var bodyReader io.Reader
+        if body != nil </span><span class="cov0" title="0">{
+                jsonBody, err := json.Marshal(body)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to marshal request body: %w", err)
+                }</span>
+                <span class="cov0" title="0">bodyReader = bytes.NewReader(jsonBody)</span>
+        }
+
+        <span class="cov0" title="0">req, err := internal.NewRequest(ctx, method, fullURL, bodyReader)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">setAuthHeader(req, apiKey)
+        req.Header.Set("User-Agent", userAgent)
+        if body != nil </span><span class="cov0" title="0">{
+                req.Header.Set("Content-Type", "application/json")
+        }</span>
+        <span class="cov0" title="0">req.Header.Set("Accept", "application/json")
+
+        resp, err := httpClient.Do(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("request failed: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">if resp.StatusCode &gt;= 400 </span><span class="cov0" title="0">{
+                return handleErrorResponse(resp)
+        }</span>
+
+        <span class="cov0" title="0">if result != nil &amp;&amp; resp.StatusCode != http.StatusNoContent </span><span class="cov0" title="0">{
+                defer resp.Body.Close()
+                if err := json.NewDecoder(resp.Body).Decode(result); err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to decode response: %w", err)
+                }</span>
+        } else<span class="cov0" title="0"> {
+                resp.Body.Close()
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// handleErrorResponse parses and returns an appropriate error from an HTTP response.
+func handleErrorResponse(resp *http.Response) error <span class="cov0" title="0">{
+        body, err := internal.ReadResponseBody(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                return newError(resp.StatusCode, "failed to read error response", "", "")
+        }</span>
+
+        <span class="cov0" title="0">errResp := internal.ParseErrorResponse(body)
+        if errResp != nil &amp;&amp; errResp.Message != "" </span><span class="cov0" title="0">{
+                return newError(resp.StatusCode, errResp.Message, errResp.ErrorKey, errResp.Field)
+        }</span>
+
+        <span class="cov0" title="0">return newError(resp.StatusCode, string(body), "", "")</span>
+}
+
+// buildListURL builds a URL with pagination and search query parameters.
+func buildListURL(basePath string, opts *ListOptions) string <span class="cov0" title="0">{
+        if opts == nil </span><span class="cov0" title="0">{
+                return basePath
+        }</span>
+
+        <span class="cov0" title="0">params := url.Values{}
+        if opts.Page &gt; 0 </span><span class="cov0" title="0">{
+                params.Set("page", strconv.Itoa(opts.Page))
+        }</span>
+        <span class="cov0" title="0">if opts.ItemsPerPage &gt; 0 </span><span class="cov0" title="0">{
+                params.Set("itemsPerPage", strconv.Itoa(opts.ItemsPerPage))
+        }</span>
+        <span class="cov0" title="0">if opts.Search != "" </span><span class="cov0" title="0">{
+                params.Set("search", opts.Search)
+        }</span>
+        <span class="cov0" title="0">if opts.OrderBy != "" </span><span class="cov0" title="0">{
+                params.Set("orderBy", opts.OrderBy)
+        }</span>
+
+        <span class="cov0" title="0">if len(params) == 0 </span><span class="cov0" title="0">{
+                return basePath
+        }</span>
+
+        <span class="cov0" title="0">if strings.Contains(basePath, "?") </span><span class="cov0" title="0">{
+                return basePath + "&amp;" + params.Encode()
+        }</span>
+        <span class="cov0" title="0">return basePath + "?" + params.Encode()</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package main
+
+import (
+        "context"
+        "fmt"
+        "io"
+        "log"
+        "strings"
+
+        "github.com/geraldo/bunny-sdk-go/storage"
+        "github.com/geraldo/bunny-sdk-go/stream"
+)
+
+const (
+        // Global API Key (para Storage Zone Management e Stream Library Management)
+        apiKey = "55f77bd6-6936-4370-9585-51c942028078b718e441-bf34-41dd-bc2d-252fe11f1b33"
+
+        // Storage Zone credentials (para File Operations)
+        storageZoneName     = "my-storage-test1"
+        storageZonePassword = "65a1fec6-5090-49c7-8b67fff24236-9dca-47b4"
+        storageZoneRegion   = storage.RegionSaoPaulo // br.storage.bunnycdn.com
+
+        // Stream Library credentials (para Video Operations)
+        streamLibraryID  = int64(588840)
+        streamAPIKey     = "429f593d-87a6-48c6-a33966d930a5-549c-424d"
+)
+
+func main() <span class="cov0" title="0">{
+        ctx := context.Background()
+
+        fmt.Println("=== Bunny SDK Go - Teste de Rotas ===")
+        fmt.Println()
+
+        // Testar Storage Zone Management API
+        testStorageAPI(ctx)
+
+        // Testar Storage File Operations API
+        testFileOperations(ctx)
+
+        // Testar Stream API
+        testStreamAPI(ctx)
+}</span>
+
+func testStorageAPI(ctx context.Context) <span class="cov0" title="0">{
+        fmt.Println("--- Storage API ---")
+
+        client := storage.NewClient(apiKey)
+        zones := client.Zones()
+
+        // Listar Storage Zones
+        fmt.Println("\n[1] Listando Storage Zones...")
+        listResp, err := zones.List(ctx, &amp;storage.ZoneListOptions{
+                Page:    1,
+                PerPage: 10,
+        })
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Erro ao listar zones: %v\n", err)
+        }</span> else<span class="cov0" title="0"> {
+                fmt.Printf("Total de zones: %d\n", listResp.TotalItems)
+                for _, zone := range listResp.Items </span><span class="cov0" title="0">{
+                        fmt.Printf("  - ID: %d, Nome: %s, Region: %s\n", zone.ID, zone.Name, zone.Region)
+                }</span>
+        }
+
+        <span class="cov0" title="0">fmt.Println()</span>
+}
+
+func testFileOperations(ctx context.Context) <span class="cov0" title="0">{
+        fmt.Println("--- Storage File Operations ---")
+
+        fs := storage.NewFileService(storageZoneName, storageZonePassword, storageZoneRegion)
+
+        // 1. Upload de arquivo
+        fmt.Println("\n[1] Fazendo upload de arquivo de teste...")
+        testContent := "Hello from Bunny SDK Go! - " + fmt.Sprintf("%d", 123456)
+        err := fs.Upload(ctx, "sdk-test/test-file.txt", strings.NewReader(testContent), nil)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Erro ao fazer upload: %v\n", err)
+                return
+        }</span>
+        <span class="cov0" title="0">fmt.Println("Upload realizado com sucesso!")
+
+        // 2. Listar arquivos
+        fmt.Println("\n[2] Listando arquivos no diretório 'sdk-test'...")
+        files, err := fs.List(ctx, "sdk-test")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Erro ao listar arquivos: %v\n", err)
+        }</span> else<span class="cov0" title="0"> {
+                fmt.Printf("Arquivos encontrados: %d\n", len(files))
+                for _, f := range files </span><span class="cov0" title="0">{
+                        fmt.Printf("  - %s (%.2f KB, isDir: %v)\n", f.ObjectName, float64(f.Length)/1024, f.IsDirectory)
+                }</span>
+        }
+
+        // 3. Download de arquivo
+        <span class="cov0" title="0">fmt.Println("\n[3] Fazendo download do arquivo...")
+        reader, err := fs.Download(ctx, "sdk-test/test-file.txt")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Erro ao fazer download: %v\n", err)
+        }</span> else<span class="cov0" title="0"> {
+                defer reader.Close()
+                content, _ := io.ReadAll(reader)
+                fmt.Printf("Conteúdo do arquivo: %s\n", string(content))
+        }</span>
+
+        // 4. Deletar arquivo
+        <span class="cov0" title="0">fmt.Println("\n[4] Deletando arquivo de teste...")
+        err = fs.Delete(ctx, "sdk-test/test-file.txt")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Erro ao deletar arquivo: %v\n", err)
+        }</span> else<span class="cov0" title="0"> {
+                fmt.Println("Arquivo deletado com sucesso!")
+        }</span>
+
+        <span class="cov0" title="0">fmt.Println()</span>
+}
+
+func testStreamAPI(ctx context.Context) <span class="cov0" title="0">{
+        fmt.Println("--- Stream API ---")
+
+        // Client com Global API Key para listar libraries
+        client := stream.NewClient(apiKey)
+        libraries := client.Libraries()
+
+        // Listar Libraries
+        fmt.Println("\n[1] Listando Video Libraries...")
+        listResp, err := libraries.List(ctx, &amp;stream.LibraryListOptions{
+                Page:         1,
+                ItemsPerPage: 10,
+        })
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Erro ao listar libraries: %v\n", err)
+        }</span> else<span class="cov0" title="0"> {
+                fmt.Printf("Total de libraries: %d\n", listResp.TotalItems)
+                for _, lib := range listResp.Items </span><span class="cov0" title="0">{
+                        fmt.Printf("  - ID: %d, Nome: %s\n", lib.LibraryID, lib.Name)
+                }</span>
+        }
+
+        // Testar operações de vídeo com Stream API Key específica da library
+        <span class="cov0" title="0">testVideoOperations(ctx, streamLibraryID)
+
+        fmt.Println()</span>
+}
+
+func testVideoOperations(ctx context.Context, libraryID int64) <span class="cov0" title="0">{
+        // Client com Stream API Key específica da library para operações de vídeo
+        client := stream.NewClient(streamAPIKey)
+
+        fmt.Printf("\n[2] Listando Vídeos da Library %d...\n", libraryID)
+
+        videos := client.Videos(libraryID)
+        videoList, err := videos.List(ctx, &amp;stream.VideoListOptions{
+                Page:         1,
+                ItemsPerPage: 5,
+        })
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Erro ao listar vídeos: %v\n", err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">fmt.Printf("Total de vídeos: %d\n", videoList.TotalItems)
+        for _, v := range videoList.Items </span><span class="cov0" title="0">{
+                fmt.Printf("  - ID: %s, Título: %s, Estado: %s\n", v.VideoID, v.Title, v.State)
+        }</span>
+
+        // Testar Collections
+        <span class="cov0" title="0">fmt.Printf("\n[3] Listando Collections da Library %d...\n", libraryID)
+        collections := client.Collections(libraryID)
+        collList, err := collections.List(ctx, &amp;stream.CollectionListOptions{
+                Page:         1,
+                ItemsPerPage: 5,
+        })
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Erro ao listar collections: %v\n", err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">fmt.Printf("Total de collections: %d\n", collList.TotalItems)
+        for _, c := range collList.Items </span><span class="cov0" title="0">{
+                fmt.Printf("  - GUID: %s, Nome: %s\n", c.GUID, c.Name)
+        }</span>
+}
+
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package bunny
+
+import (
+        "fmt"
+        "net/http"
+)
+
+// APIError represents an error returned by the Bunny.net API.
+type APIError struct {
+        StatusCode int    `json:"-"`
+        Message    string `json:"Message"`
+        ErrorKey   string `json:"ErrorKey,omitempty"`
+        Field      string `json:"Field,omitempty"`
+}
+
+// Error implements the error interface.
+func (e *APIError) Error() string <span class="cov8" title="1">{
+        if e.Field != "" </span><span class="cov8" title="1">{
+                return fmt.Sprintf("bunny: %s (status: %d, field: %s)", e.Message, e.StatusCode, e.Field)
+        }</span>
+        <span class="cov8" title="1">if e.ErrorKey != "" </span><span class="cov8" title="1">{
+                return fmt.Sprintf("bunny: %s (status: %d, key: %s)", e.Message, e.StatusCode, e.ErrorKey)
+        }</span>
+        <span class="cov8" title="1">return fmt.Sprintf("bunny: %s (status: %d)", e.Message, e.StatusCode)</span>
+}
+
+// IsAuthError returns true if the error is an authentication error (401 or 403).
+func (e *APIError) IsAuthError() bool <span class="cov8" title="1">{
+        return e.StatusCode == http.StatusUnauthorized || e.StatusCode == http.StatusForbidden
+}</span>
+
+// IsNotFound returns true if the error is a not found error (404).
+func (e *APIError) IsNotFound() bool <span class="cov8" title="1">{
+        return e.StatusCode == http.StatusNotFound
+}</span>
+
+// IsRateLimited returns true if the error is a rate limit error (429).
+func (e *APIError) IsRateLimited() bool <span class="cov8" title="1">{
+        return e.StatusCode == http.StatusTooManyRequests
+}</span>
+
+// IsRetryable returns true if the error is retryable (5xx or 429).
+func (e *APIError) IsRetryable() bool <span class="cov8" title="1">{
+        return e.StatusCode &gt;= 500 || e.StatusCode == http.StatusTooManyRequests
+}</span>
+
+// NotFoundError represents a 404 Not Found error.
+type NotFoundError struct {
+        *APIError
+}
+
+// AuthError represents a 401 Unauthorized or 403 Forbidden error.
+type AuthError struct {
+        *APIError
+}
+
+// RateLimitError represents a 429 Too Many Requests error.
+type RateLimitError struct {
+        *APIError
+}
+
+// newError creates the appropriate error type based on status code.
+func newError(statusCode int, message, errorKey, field string) error <span class="cov0" title="0">{
+        apiErr := &amp;APIError{
+                StatusCode: statusCode,
+                Message:    message,
+                ErrorKey:   errorKey,
+                Field:      field,
+        }
+
+        switch statusCode </span>{
+        case http.StatusNotFound:<span class="cov0" title="0">
+                return &amp;NotFoundError{APIError: apiErr}</span>
+        case http.StatusUnauthorized, http.StatusForbidden:<span class="cov0" title="0">
+                return &amp;AuthError{APIError: apiErr}</span>
+        case http.StatusTooManyRequests:<span class="cov0" title="0">
+                return &amp;RateLimitError{APIError: apiErr}</span>
+        default:<span class="cov0" title="0">
+                return apiErr</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">// Package internal provides internal utilities for the Bunny SDK.
+package internal
+
+import (
+        "strings"
+        "time"
+)
+
+// BunnyTime is a custom time type that handles multiple date formats
+// returned by Bunny.net APIs.
+type BunnyTime struct {
+        time.Time
+}
+
+// Bunny.net returns dates in various formats without consistent timezone info
+var bunnyTimeFormats = []string{
+        time.RFC3339,
+        time.RFC3339Nano,
+        "2006-01-02T15:04:05",
+        "2006-01-02T15:04:05.999",
+        "2006-01-02T15:04:05.999999",
+        "2006-01-02T15:04:05.999999999",
+}
+
+// UnmarshalJSON implements json.Unmarshaler for BunnyTime.
+func (bt *BunnyTime) UnmarshalJSON(data []byte) error <span class="cov8" title="1">{
+        s := strings.Trim(string(data), `"`)
+        if s == "" || s == "null" </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+
+        <span class="cov8" title="1">var err error
+        for _, format := range bunnyTimeFormats </span><span class="cov8" title="1">{
+                bt.Time, err = time.Parse(format, s)
+                if err == nil </span><span class="cov8" title="1">{
+                        return nil
+                }</span>
+        }
+
+        <span class="cov8" title="1">return err</span>
+}
+
+// MarshalJSON implements json.Marshaler for BunnyTime.
+func (bt BunnyTime) MarshalJSON() ([]byte, error) <span class="cov8" title="1">{
+        if bt.IsZero() </span><span class="cov8" title="1">{
+                return []byte("null"), nil
+        }</span>
+        <span class="cov8" title="1">return []byte(`"` + bt.Format(time.RFC3339) + `"`), nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">// Package internal provides internal utilities for the Bunny SDK.
+package internal
+
+import (
+        "context"
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+)
+
+// NewRequest creates a new HTTP request with context.
+func NewRequest(ctx context.Context, method, url string, body io.Reader) (*http.Request, error) <span class="cov8" title="1">{
+        req, err := http.NewRequestWithContext(ctx, method, url, body)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to create request: %w", err)
+        }</span>
+        <span class="cov8" title="1">return req, nil</span>
+}
+
+// DecodeResponse decodes a JSON response body into the given type.
+func DecodeResponse[T any](resp *http.Response) (*T, error) <span class="cov8" title="1">{
+        defer resp.Body.Close()
+
+        var result T
+        if err := json.NewDecoder(resp.Body).Decode(&amp;result); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to decode response: %w", err)
+        }</span>
+        <span class="cov8" title="1">return &amp;result, nil</span>
+}
+
+// ReadResponseBody reads the entire response body and closes it.
+func ReadResponseBody(resp *http.Response) ([]byte, error) <span class="cov8" title="1">{
+        defer resp.Body.Close()
+        return io.ReadAll(resp.Body)
+}</span>
+
+// ErrorResponse represents an error response from the Bunny API.
+type ErrorResponse struct {
+        Message  string `json:"Message"`
+        ErrorKey string `json:"ErrorKey,omitempty"`
+        Field    string `json:"Field,omitempty"`
+}
+
+// ParseErrorResponse attempts to parse an error response from the body.
+func ParseErrorResponse(body []byte) *ErrorResponse <span class="cov8" title="1">{
+        var errResp ErrorResponse
+        if err := json.Unmarshal(body, &amp;errResp); err != nil </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">return &amp;errResp</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">// Package testutil provides testing utilities for the Bunny SDK.
+package testutil
+
+import (
+        "bytes"
+        "io"
+        "net/http"
+)
+
+// MockHTTPClient is a mock HTTP client for testing.
+type MockHTTPClient struct {
+        DoFunc func(req *http.Request) (*http.Response, error)
+}
+
+// Do executes the mock function.
+func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) <span class="cov0" title="0">{
+        return m.DoFunc(req)
+}</span>
+
+// NewMockResponse creates a mock HTTP response with the given status code and body.
+func NewMockResponse(statusCode int, body string) *http.Response <span class="cov0" title="0">{
+        return &amp;http.Response{
+                StatusCode: statusCode,
+                Body:       io.NopCloser(bytes.NewBufferString(body)),
+                Header:     make(http.Header),
+        }
+}</span>
+
+// NewMockResponseWithHeaders creates a mock HTTP response with custom headers.
+func NewMockResponseWithHeaders(statusCode int, body string, headers map[string]string) *http.Response <span class="cov0" title="0">{
+        resp := NewMockResponse(statusCode, body)
+        for k, v := range headers </span><span class="cov0" title="0">{
+                resp.Header.Set(k, v)
+        }</span>
+        <span class="cov0" title="0">return resp</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package bunny
+
+// Option is a functional option for configuring the Client.
+type Option func(*Client)
+
+// WithHTTPClient sets a custom HTTP client for the client.
+func WithHTTPClient(hc HTTPClient) Option <span class="cov8" title="1">{
+        return func(c *Client) </span><span class="cov8" title="1">{
+                c.httpClient = hc
+        }</span>
+}
+
+// WithUserAgent sets a custom user agent string for API requests.
+func WithUserAgent(ua string) Option <span class="cov8" title="1">{
+        return func(c *Client) </span><span class="cov8" title="1">{
+                c.userAgent = ua
+        }</span>
+}
+
+// WithStreamBaseURL sets a custom base URL for the Stream API.
+func WithStreamBaseURL(url string) Option <span class="cov8" title="1">{
+        return func(c *Client) </span><span class="cov8" title="1">{
+                c.streamBaseURL = url
+        }</span>
+}
+
+// WithStorageBaseURL sets a custom base URL for the Storage management API.
+func WithStorageBaseURL(url string) Option <span class="cov8" title="1">{
+        return func(c *Client) </span><span class="cov8" title="1">{
+                c.storageBaseURL = url
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package bunny
+
+// PaginatedResponse represents a paginated API response.
+type PaginatedResponse[T any] struct {
+        Items       []T `json:"Items"`
+        CurrentPage int `json:"CurrentPage"`
+        TotalItems  int `json:"TotalItems"`
+        ItemsPerPage int `json:"ItemsPerPage"`
+}
+
+// HasMore returns true if there are more items to fetch.
+func (p *PaginatedResponse[T]) HasMore() bool <span class="cov8" title="1">{
+        return p.CurrentPage*p.ItemsPerPage &lt; p.TotalItems
+}</span>
+
+// ListOptions specifies optional parameters for list operations.
+type ListOptions struct {
+        Page         int
+        ItemsPerPage int
+        Search       string
+        OrderBy      string
+}
+
+// DefaultListOptions returns the default list options.
+func DefaultListOptions() *ListOptions <span class="cov8" title="1">{
+        return &amp;ListOptions{
+                Page:         1,
+                ItemsPerPage: 100,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package storage
+
+import (
+        "bytes"
+        "context"
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+
+        "github.com/geraldo/bunny-sdk-go/internal"
+)
+
+const (
+        defaultBaseURL   = "https://api.bunny.net"
+        defaultUserAgent = "bunny-sdk-go/1.0"
+)
+
+// Client is a client for the Bunny.net Storage Zone Management API.
+// Use this client for managing storage zones (create, list, update, delete).
+// For file operations, use NewFileService instead.
+type Client struct {
+        apiKey     string
+        httpClient HTTPClient
+        userAgent  string
+        baseURL    string
+}
+
+// Option is a functional option for configuring the Client.
+type Option func(*Client)
+
+// WithHTTPClient sets a custom HTTP client.
+func WithHTTPClient(hc HTTPClient) Option <span class="cov8" title="1">{
+        return func(c *Client) </span><span class="cov8" title="1">{
+                c.httpClient = hc
+        }</span>
+}
+
+// WithUserAgent sets a custom user agent string.
+func WithUserAgent(ua string) Option <span class="cov0" title="0">{
+        return func(c *Client) </span><span class="cov0" title="0">{
+                c.userAgent = ua
+        }</span>
+}
+
+// WithBaseURL sets a custom base URL for the API.
+func WithBaseURL(url string) Option <span class="cov0" title="0">{
+        return func(c *Client) </span><span class="cov0" title="0">{
+                c.baseURL = url
+        }</span>
+}
+
+// NewClient creates a new Storage Zone Management API client.
+// Use the Global API Key (found in account settings).
+func NewClient(apiKey string, opts ...Option) *Client <span class="cov8" title="1">{
+        c := &amp;Client{
+                apiKey:     apiKey,
+                httpClient: http.DefaultClient,
+                userAgent:  defaultUserAgent,
+                baseURL:    defaultBaseURL,
+        }
+        for _, opt := range opts </span><span class="cov8" title="1">{
+                opt(c)
+        }</span>
+        <span class="cov8" title="1">return c</span>
+}
+
+// Zones returns a ZoneService for managing storage zones.
+func (c *Client) Zones() ZoneService <span class="cov8" title="1">{
+        return newZoneService(&amp;clientAdapter{c})
+}</span>
+
+// clientAdapter adapts Client to the httpClient interface.
+type clientAdapter struct {
+        client *Client
+}
+
+func (a *clientAdapter) do(ctx context.Context, method, path string, body any, result any) error <span class="cov8" title="1">{
+        return a.client.doRequest(ctx, method, path, body, result)
+}</span>
+
+func (c *Client) doRequest(ctx context.Context, method, path string, body any, result any) error <span class="cov8" title="1">{
+        fullURL := c.baseURL + path
+
+        var bodyReader io.Reader
+        if body != nil </span><span class="cov8" title="1">{
+                jsonBody, err := json.Marshal(body)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to marshal request body: %w", err)
+                }</span>
+                <span class="cov8" title="1">bodyReader = bytes.NewReader(jsonBody)</span>
+        }
+
+        <span class="cov8" title="1">req, err := internal.NewRequest(ctx, method, fullURL, bodyReader)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">req.Header.Set("AccessKey", c.apiKey)
+        req.Header.Set("User-Agent", c.userAgent)
+        if body != nil </span><span class="cov8" title="1">{
+                req.Header.Set("Content-Type", "application/json")
+        }</span>
+        <span class="cov8" title="1">req.Header.Set("Accept", "application/json")
+
+        resp, err := c.httpClient.Do(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("request failed: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if resp.StatusCode &gt;= 400 </span><span class="cov0" title="0">{
+                return handleErrorResponse(resp)
+        }</span>
+
+        <span class="cov8" title="1">if result != nil &amp;&amp; resp.StatusCode != http.StatusNoContent </span><span class="cov8" title="1">{
+                defer resp.Body.Close()
+                if err := json.NewDecoder(resp.Body).Decode(result); err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to decode response: %w", err)
+                }</span>
+        } else<span class="cov8" title="1"> {
+                resp.Body.Close()
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+func handleErrorResponse(resp *http.Response) error <span class="cov0" title="0">{
+        body, err := internal.ReadResponseBody(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                return newAPIError(resp.StatusCode, "failed to read error response", "", "")
+        }</span>
+
+        <span class="cov0" title="0">errResp := internal.ParseErrorResponse(body)
+        if errResp != nil &amp;&amp; errResp.Message != "" </span><span class="cov0" title="0">{
+                return newAPIError(resp.StatusCode, errResp.Message, errResp.ErrorKey, errResp.Field)
+        }</span>
+
+        <span class="cov0" title="0">return newAPIError(resp.StatusCode, string(body), "", "")</span>
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package storage
+
+import (
+        "context"
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "strings"
+
+        "github.com/geraldo/bunny-sdk-go/internal"
+)
+
+// FileService provides methods for file operations in a storage zone.
+type FileService interface {
+        Upload(ctx context.Context, path string, reader io.Reader, opts *UploadOptions) error
+        Download(ctx context.Context, path string) (io.ReadCloser, error)
+        List(ctx context.Context, path string) ([]File, error)
+        Delete(ctx context.Context, path string) error
+        DeleteDirectory(ctx context.Context, path string) error
+}
+
+type fileService struct {
+        httpClient HTTPClient
+        baseURL    string
+        zoneName   string
+        accessKey  string
+        userAgent  string
+}
+
+// HTTPClient is an interface for making HTTP requests.
+type HTTPClient interface {
+        Do(req *http.Request) (*http.Response, error)
+}
+
+// NewFileService creates a new FileService for file operations.
+// Use the storage zone password (NOT global API key) as accessKey.
+func NewFileService(zoneName, accessKey string, region Region, opts ...FileServiceOption) FileService <span class="cov8" title="1">{
+        fs := &amp;fileService{
+                httpClient: http.DefaultClient,
+                baseURL:    RegionBaseURL(region),
+                zoneName:   zoneName,
+                accessKey:  accessKey,
+                userAgent:  "bunny-sdk-go/1.0",
+        }
+        for _, opt := range opts </span><span class="cov8" title="1">{
+                opt(fs)
+        }</span>
+        <span class="cov8" title="1">return fs</span>
+}
+
+// FileServiceOption is a functional option for configuring FileService.
+type FileServiceOption func(*fileService)
+
+// WithFileHTTPClient sets a custom HTTP client for file operations.
+func WithFileHTTPClient(hc HTTPClient) FileServiceOption <span class="cov8" title="1">{
+        return func(fs *fileService) </span><span class="cov8" title="1">{
+                fs.httpClient = hc
+        }</span>
+}
+
+// WithFileUserAgent sets a custom user agent for file operations.
+func WithFileUserAgent(ua string) FileServiceOption <span class="cov0" title="0">{
+        return func(fs *fileService) </span><span class="cov0" title="0">{
+                fs.userAgent = ua
+        }</span>
+}
+
+// Upload uploads a file to the storage zone.
+// The path should not include the zone name (e.g., "documents/report.pdf").
+// Directories are created automatically.
+func (s *fileService) Upload(ctx context.Context, path string, reader io.Reader, opts *UploadOptions) error <span class="cov8" title="1">{
+        fullURL := s.buildURL(path)
+
+        req, err := internal.NewRequest(ctx, http.MethodPut, fullURL, reader)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">s.setHeaders(req)
+        if opts != nil </span><span class="cov0" title="0">{
+                if opts.Checksum != "" </span><span class="cov0" title="0">{
+                        req.Header.Set("Checksum", opts.Checksum)
+                }</span>
+                <span class="cov0" title="0">if opts.ContentType != "" </span><span class="cov0" title="0">{
+                        req.Header.Set("Content-Type", opts.ContentType)
+                }</span> else<span class="cov0" title="0"> {
+                        req.Header.Set("Content-Type", "application/octet-stream")
+                }</span>
+        } else<span class="cov8" title="1"> {
+                req.Header.Set("Content-Type", "application/octet-stream")
+        }</span>
+
+        <span class="cov8" title="1">resp, err := s.httpClient.Do(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("upload failed: %w", err)
+        }</span>
+        <span class="cov8" title="1">defer resp.Body.Close()
+
+        if resp.StatusCode &gt;= 400 </span><span class="cov0" title="0">{
+                return s.handleError(resp)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// Download downloads a file from the storage zone.
+// The caller is responsible for closing the returned ReadCloser.
+func (s *fileService) Download(ctx context.Context, path string) (io.ReadCloser, error) <span class="cov8" title="1">{
+        fullURL := s.buildURL(path)
+
+        req, err := internal.NewRequest(ctx, http.MethodGet, fullURL, nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">s.setHeaders(req)
+
+        resp, err := s.httpClient.Do(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("download failed: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if resp.StatusCode &gt;= 400 </span><span class="cov0" title="0">{
+                defer resp.Body.Close()
+                return nil, s.handleError(resp)
+        }</span>
+
+        <span class="cov8" title="1">return resp.Body, nil</span>
+}
+
+// List lists files and directories at the given path.
+// The path should be a directory path (trailing slash is added automatically).
+func (s *fileService) List(ctx context.Context, path string) ([]File, error) <span class="cov8" title="1">{
+        // Ensure trailing slash for directory listing
+        if !strings.HasSuffix(path, "/") </span><span class="cov8" title="1">{
+                path = path + "/"
+        }</span>
+
+        <span class="cov8" title="1">fullURL := s.buildURL(path)
+
+        req, err := internal.NewRequest(ctx, http.MethodGet, fullURL, nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">s.setHeaders(req)
+        req.Header.Set("Accept", "application/json")
+
+        resp, err := s.httpClient.Do(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("list failed: %w", err)
+        }</span>
+        <span class="cov8" title="1">defer resp.Body.Close()
+
+        if resp.StatusCode &gt;= 400 </span><span class="cov0" title="0">{
+                return nil, s.handleError(resp)
+        }</span>
+
+        <span class="cov8" title="1">var files []File
+        if err := json.NewDecoder(resp.Body).Decode(&amp;files); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to decode response: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return files, nil</span>
+}
+
+// Delete deletes a file from the storage zone.
+func (s *fileService) Delete(ctx context.Context, path string) error <span class="cov8" title="1">{
+        // Ensure no trailing slash for file deletion
+        path = strings.TrimSuffix(path, "/")
+
+        fullURL := s.buildURL(path)
+
+        req, err := internal.NewRequest(ctx, http.MethodDelete, fullURL, nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">s.setHeaders(req)
+
+        resp, err := s.httpClient.Do(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("delete failed: %w", err)
+        }</span>
+        <span class="cov8" title="1">defer resp.Body.Close()
+
+        if resp.StatusCode &gt;= 400 </span><span class="cov0" title="0">{
+                return s.handleError(resp)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// DeleteDirectory deletes a directory and all its contents recursively.
+func (s *fileService) DeleteDirectory(ctx context.Context, path string) error <span class="cov0" title="0">{
+        // Ensure trailing slash for directory deletion
+        if !strings.HasSuffix(path, "/") </span><span class="cov0" title="0">{
+                path = path + "/"
+        }</span>
+
+        <span class="cov0" title="0">fullURL := s.buildURL(path)
+
+        req, err := internal.NewRequest(ctx, http.MethodDelete, fullURL, nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">s.setHeaders(req)
+
+        resp, err := s.httpClient.Do(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("delete directory failed: %w", err)
+        }</span>
+        <span class="cov0" title="0">defer resp.Body.Close()
+
+        if resp.StatusCode &gt;= 400 </span><span class="cov0" title="0">{
+                return s.handleError(resp)
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (s *fileService) buildURL(path string) string <span class="cov8" title="1">{
+        // Remove leading slash from path
+        path = strings.TrimPrefix(path, "/")
+        return fmt.Sprintf("%s/%s/%s", s.baseURL, s.zoneName, path)
+}</span>
+
+func (s *fileService) setHeaders(req *http.Request) <span class="cov8" title="1">{
+        req.Header.Set("AccessKey", s.accessKey)
+        req.Header.Set("User-Agent", s.userAgent)
+}</span>
+
+func (s *fileService) handleError(resp *http.Response) error <span class="cov0" title="0">{
+        body, err := internal.ReadResponseBody(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                return newAPIError(resp.StatusCode, "failed to read error response", "", "")
+        }</span>
+
+        <span class="cov0" title="0">errResp := internal.ParseErrorResponse(body)
+        if errResp != nil &amp;&amp; errResp.Message != "" </span><span class="cov0" title="0">{
+                return newAPIError(resp.StatusCode, errResp.Message, errResp.ErrorKey, errResp.Field)
+        }</span>
+
+        <span class="cov0" title="0">return newAPIError(resp.StatusCode, string(body), "", "")</span>
+}
+
+// APIError represents an error from the Bunny.net Storage API.
+type APIError struct {
+        StatusCode int
+        Message    string
+        ErrorKey   string
+        Field      string
+}
+
+func (e *APIError) Error() string <span class="cov0" title="0">{
+        if e.Field != "" </span><span class="cov0" title="0">{
+                return fmt.Sprintf("bunny storage: %s (status: %d, field: %s)", e.Message, e.StatusCode, e.Field)
+        }</span>
+        <span class="cov0" title="0">if e.ErrorKey != "" </span><span class="cov0" title="0">{
+                return fmt.Sprintf("bunny storage: %s (status: %d, key: %s)", e.Message, e.StatusCode, e.ErrorKey)
+        }</span>
+        <span class="cov0" title="0">return fmt.Sprintf("bunny storage: %s (status: %d)", e.Message, e.StatusCode)</span>
+}
+
+func newAPIError(statusCode int, message, errorKey, field string) error <span class="cov0" title="0">{
+        return &amp;APIError{
+                StatusCode: statusCode,
+                Message:    message,
+                ErrorKey:   errorKey,
+                Field:      field,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">// Package storage provides types and services for the Bunny.net Storage API.
+package storage
+
+import "github.com/geraldo/bunny-sdk-go/internal"
+
+// Zone represents a storage zone in Bunny.net.
+type Zone struct {
+        ID                  int64     `json:"Id"`
+        Name                string    `json:"Name"`
+        Password            string    `json:"Password,omitempty"`
+        ReadOnlyPassword    string    `json:"ReadOnlyPassword,omitempty"`
+        Region              string    `json:"Region"`
+        ReplicationRegions  []string  `json:"ReplicationRegions,omitempty"`
+        StorageUsed         int64     `json:"StorageUsed"`
+        FilesStored         int64     `json:"FilesStored"`
+        DateModified        internal.BunnyTime `json:"DateModified"`
+        Deleted             bool      `json:"Deleted"`
+        PullZones           []int64   `json:"PullZones,omitempty"`
+        OriginURL           string    `json:"OriginUrl,omitempty"`
+        Custom404FilePath   string    `json:"Custom404FilePath,omitempty"`
+        Rewrite404To200     bool      `json:"Rewrite404To200"`
+}
+
+// File represents a file or directory in a storage zone.
+type File struct {
+        GUID            string    `json:"Guid"`
+        StorageZoneName string    `json:"StorageZoneName"`
+        Path            string    `json:"Path"`
+        ObjectName      string    `json:"ObjectName"`
+        Length          int64     `json:"Length"`
+        LastChanged     internal.BunnyTime `json:"LastChanged"`
+        IsDirectory     bool      `json:"IsDirectory"`
+        DateCreated     internal.BunnyTime `json:"DateCreated"`
+        ServerID        int       `json:"ServerId"`
+        StorageZoneID   int64     `json:"StorageZoneId"`
+        UserID          string    `json:"UserId,omitempty"`
+}
+
+// ZoneListResponse represents the paginated response from listing zones.
+type ZoneListResponse struct {
+        Items       []Zone `json:"Items"`
+        TotalItems  int    `json:"TotalItems"`
+        CurrentPage int    `json:"CurrentPage"`
+        PageSize    int    `json:"PageSize"`
+}
+
+// HasMore returns true if there are more pages to fetch.
+func (r *ZoneListResponse) HasMore() bool <span class="cov0" title="0">{
+        return (r.CurrentPage+1)*r.PageSize &lt; r.TotalItems
+}</span>
+
+// CreateZoneRequest represents a request to create a storage zone.
+type CreateZoneRequest struct {
+        Name               string   `json:"Name"`
+        Region             string   `json:"Region,omitempty"`
+        ReplicationRegions []string `json:"ReplicationRegions,omitempty"`
+        OriginURL          string   `json:"OriginUrl,omitempty"`
+}
+
+// UpdateZoneRequest represents a request to update a storage zone.
+type UpdateZoneRequest struct {
+        ReplicationRegions []string `json:"ReplicationRegions,omitempty"`
+        OriginURL          string   `json:"OriginUrl,omitempty"`
+        Custom404FilePath  string   `json:"Custom404FilePath,omitempty"`
+        Rewrite404To200    *bool    `json:"Rewrite404To200,omitempty"`
+}
+
+// ZoneListOptions specifies options for listing storage zones.
+type ZoneListOptions struct {
+        Page           int    `url:"page,omitempty"`
+        PerPage        int    `url:"perPage,omitempty"`
+        IncludeDeleted bool   `url:"includeDeleted,omitempty"`
+        Search         string `url:"search,omitempty"`
+}
+
+// UploadOptions specifies options for file uploads.
+type UploadOptions struct {
+        Checksum    string // SHA256 uppercase hex
+        ContentType string // MIME type
+}
+
+// AvailabilityResponse represents the response from checking zone name availability.
+type AvailabilityResponse struct {
+        Available bool   `json:"Available"`
+        Name      string `json:"Name"`
+}
+
+// ResetPasswordResponse represents the response from resetting a zone password.
+type ResetPasswordResponse struct {
+        ID       int64  `json:"Id"`
+        Password string `json:"Password,omitempty"`
+        Success  bool   `json:"Success"`
+}
+
+// ResetReadOnlyPasswordResponse represents the response from resetting a zone's read-only password.
+type ResetReadOnlyPasswordResponse struct {
+        ID               int64  `json:"Id"`
+        ReadOnlyPassword string `json:"ReadOnlyPassword,omitempty"`
+        Success          bool   `json:"Success"`
+}
+
+// Region represents storage region codes.
+type Region string
+
+const (
+        RegionFalkenstein  Region = "de"  // Falkenstein, Germany (default)
+        RegionNewYork      Region = "ny"  // New York
+        RegionLosAngeles   Region = "la"  // Los Angeles
+        RegionSingapore    Region = "sg"  // Singapore
+        RegionSydney       Region = "syd" // Sydney
+        RegionStockholm    Region = "se"  // Stockholm
+        RegionSaoPaulo     Region = "br"  // Sao Paulo
+        RegionJohannesburg Region = "jh"  // Johannesburg
+        RegionLondon       Region = "uk"  // London
+)
+
+// RegionBaseURL returns the base URL for a given region.
+func RegionBaseURL(region Region) string <span class="cov8" title="1">{
+        switch region </span>{
+        case RegionFalkenstein:<span class="cov8" title="1">
+                return "https://storage.bunnycdn.com"</span>
+        case RegionNewYork:<span class="cov8" title="1">
+                return "https://ny.storage.bunnycdn.com"</span>
+        case RegionLosAngeles:<span class="cov0" title="0">
+                return "https://la.storage.bunnycdn.com"</span>
+        case RegionSingapore:<span class="cov8" title="1">
+                return "https://sg.storage.bunnycdn.com"</span>
+        case RegionSydney:<span class="cov0" title="0">
+                return "https://syd.storage.bunnycdn.com"</span>
+        case RegionStockholm:<span class="cov0" title="0">
+                return "https://se.storage.bunnycdn.com"</span>
+        case RegionSaoPaulo:<span class="cov0" title="0">
+                return "https://br.storage.bunnycdn.com"</span>
+        case RegionJohannesburg:<span class="cov0" title="0">
+                return "https://jh.storage.bunnycdn.com"</span>
+        case RegionLondon:<span class="cov8" title="1">
+                return "https://uk.storage.bunnycdn.com"</span>
+        default:<span class="cov0" title="0">
+                return "https://storage.bunnycdn.com"</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package storage
+
+import (
+        "context"
+        "fmt"
+        "net/http"
+        "net/url"
+        "strconv"
+)
+
+// httpClient is the internal interface for making API requests.
+type httpClient interface {
+        do(ctx context.Context, method, path string, body any, result any) error
+}
+
+// ZoneService provides methods for managing storage zones.
+type ZoneService interface {
+        List(ctx context.Context, opts *ZoneListOptions) (*ZoneListResponse, error)
+        Get(ctx context.Context, zoneID int64) (*Zone, error)
+        Create(ctx context.Context, req *CreateZoneRequest) (*Zone, error)
+        Update(ctx context.Context, zoneID int64, req *UpdateZoneRequest) (*Zone, error)
+        Delete(ctx context.Context, zoneID int64) error
+        CheckAvailability(ctx context.Context, name string) (*AvailabilityResponse, error)
+        ResetPassword(ctx context.Context, zoneID int64) (*ResetPasswordResponse, error)
+        ResetReadOnlyPassword(ctx context.Context, zoneID int64) (*ResetReadOnlyPasswordResponse, error)
+}
+
+type zoneService struct {
+        client httpClient
+}
+
+func newZoneService(client httpClient) ZoneService <span class="cov8" title="1">{
+        return &amp;zoneService{client: client}
+}</span>
+
+// List returns a paginated list of storage zones.
+func (s *zoneService) List(ctx context.Context, opts *ZoneListOptions) (*ZoneListResponse, error) <span class="cov8" title="1">{
+        path := "/storagezone"
+        if opts != nil </span><span class="cov0" title="0">{
+                path = path + "?" + buildZoneListQuery(opts)
+        }</span>
+
+        <span class="cov8" title="1">var resp ZoneListResponse
+        if err := s.client.do(ctx, http.MethodGet, path, nil, &amp;resp); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return &amp;resp, nil</span>
+}
+
+// Get returns a single storage zone by ID.
+func (s *zoneService) Get(ctx context.Context, zoneID int64) (*Zone, error) <span class="cov8" title="1">{
+        path := fmt.Sprintf("/storagezone/%d", zoneID)
+
+        var zone Zone
+        if err := s.client.do(ctx, http.MethodGet, path, nil, &amp;zone); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return &amp;zone, nil</span>
+}
+
+// Create creates a new storage zone.
+func (s *zoneService) Create(ctx context.Context, req *CreateZoneRequest) (*Zone, error) <span class="cov8" title="1">{
+        var zone Zone
+        if err := s.client.do(ctx, http.MethodPost, "/storagezone", req, &amp;zone); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return &amp;zone, nil</span>
+}
+
+// Update updates a storage zone's settings.
+func (s *zoneService) Update(ctx context.Context, zoneID int64, req *UpdateZoneRequest) (*Zone, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/storagezone/%d", zoneID)
+
+        var zone Zone
+        if err := s.client.do(ctx, http.MethodPost, path, req, &amp;zone); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;zone, nil</span>
+}
+
+// Delete permanently deletes a storage zone.
+func (s *zoneService) Delete(ctx context.Context, zoneID int64) error <span class="cov8" title="1">{
+        path := fmt.Sprintf("/storagezone/%d", zoneID)
+        return s.client.do(ctx, http.MethodDelete, path, nil, nil)
+}</span>
+
+// CheckAvailability checks if a storage zone name is available.
+func (s *zoneService) CheckAvailability(ctx context.Context, name string) (*AvailabilityResponse, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/storagezone/checkavailability/%s", url.PathEscape(name))
+
+        var resp AvailabilityResponse
+        if err := s.client.do(ctx, http.MethodGet, path, nil, &amp;resp); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;resp, nil</span>
+}
+
+// ResetPassword resets the main password for a storage zone.
+func (s *zoneService) ResetPassword(ctx context.Context, zoneID int64) (*ResetPasswordResponse, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/storagezone/%d/resetPassword", zoneID)
+
+        var resp ResetPasswordResponse
+        // API requires empty JSON body
+        if err := s.client.do(ctx, http.MethodPost, path, struct{}{}, &amp;resp); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;resp, nil</span>
+}
+
+// ResetReadOnlyPassword resets the read-only password for a storage zone.
+func (s *zoneService) ResetReadOnlyPassword(ctx context.Context, zoneID int64) (*ResetReadOnlyPasswordResponse, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/storagezone/%d/resetReadOnlyPassword", zoneID)
+
+        var resp ResetReadOnlyPasswordResponse
+        // API requires empty JSON body
+        if err := s.client.do(ctx, http.MethodPost, path, struct{}{}, &amp;resp); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;resp, nil</span>
+}
+
+func buildZoneListQuery(opts *ZoneListOptions) string <span class="cov0" title="0">{
+        params := url.Values{}
+        if opts.Page &gt; 0 </span><span class="cov0" title="0">{
+                params.Set("page", strconv.Itoa(opts.Page))
+        }</span>
+        <span class="cov0" title="0">if opts.PerPage &gt; 0 </span><span class="cov0" title="0">{
+                params.Set("perPage", strconv.Itoa(opts.PerPage))
+        }</span>
+        <span class="cov0" title="0">if opts.IncludeDeleted </span><span class="cov0" title="0">{
+                params.Set("includeDeleted", "true")
+        }</span>
+        <span class="cov0" title="0">if opts.Search != "" </span><span class="cov0" title="0">{
+                params.Set("search", opts.Search)
+        }</span>
+        <span class="cov0" title="0">return params.Encode()</span>
+}
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package stream
+
+import (
+        "context"
+        "io"
+        "net/http"
+)
+
+const (
+        // Base API URL for library management operations (list, create, delete libraries)
+        defaultBaseAPIURL = "https://api.bunny.net"
+        // Stream API URL for video/collection operations within a library
+        defaultStreamAPIURL = "https://video.bunnycdn.com"
+        defaultUserAgent    = "bunny-sdk-go/1.0"
+)
+
+// Client is a client for the Bunny.net Stream API.
+type Client struct {
+        apiKey       string
+        httpClient   HTTPClient
+        userAgent    string
+        baseAPIURL   string // for library management (api.bunny.net)
+        streamAPIURL string // for video/collection operations (video.bunnycdn.com)
+}
+
+// HTTPClient is an interface for making HTTP requests.
+type HTTPClient interface {
+        Do(req *http.Request) (*http.Response, error)
+}
+
+// Option is a functional option for configuring the Client.
+type Option func(*Client)
+
+// WithHTTPClient sets a custom HTTP client.
+func WithHTTPClient(hc HTTPClient) Option <span class="cov8" title="1">{
+        return func(c *Client) </span><span class="cov8" title="1">{
+                c.httpClient = hc
+        }</span>
+}
+
+// WithUserAgent sets a custom user agent string.
+func WithUserAgent(ua string) Option <span class="cov8" title="1">{
+        return func(c *Client) </span><span class="cov8" title="1">{
+                c.userAgent = ua
+        }</span>
+}
+
+// WithBaseAPIURL sets a custom base API URL for library management.
+func WithBaseAPIURL(url string) Option <span class="cov0" title="0">{
+        return func(c *Client) </span><span class="cov0" title="0">{
+                c.baseAPIURL = url
+        }</span>
+}
+
+// WithStreamAPIURL sets a custom stream API URL for video/collection operations.
+func WithStreamAPIURL(url string) Option <span class="cov0" title="0">{
+        return func(c *Client) </span><span class="cov0" title="0">{
+                c.streamAPIURL = url
+        }</span>
+}
+
+// NewClient creates a new Stream API client.
+// Use the Global API Key (found in Account Settings &gt; API) for library management.
+func NewClient(apiKey string, opts ...Option) *Client <span class="cov8" title="1">{
+        c := &amp;Client{
+                apiKey:       apiKey,
+                httpClient:   http.DefaultClient,
+                userAgent:    defaultUserAgent,
+                baseAPIURL:   defaultBaseAPIURL,
+                streamAPIURL: defaultStreamAPIURL,
+        }
+        for _, opt := range opts </span><span class="cov8" title="1">{
+                opt(c)
+        }</span>
+        <span class="cov8" title="1">return c</span>
+}
+
+// Videos returns a VideoService for managing videos in the specified library.
+func (c *Client) Videos(libraryID int64) VideoService <span class="cov8" title="1">{
+        return newVideoService(&amp;streamAdapter{c}, libraryID)
+}</span>
+
+// Libraries returns a LibraryService for managing video libraries.
+func (c *Client) Libraries() LibraryService <span class="cov8" title="1">{
+        return newLibraryService(&amp;baseAdapter{c})
+}</span>
+
+// Collections returns a CollectionService for managing collections in the specified library.
+func (c *Client) Collections(libraryID int64) CollectionService <span class="cov8" title="1">{
+        return newCollectionService(&amp;streamAdapter{c}, libraryID)
+}</span>
+
+// baseAdapter uses api.bunny.net for library management operations.
+type baseAdapter struct {
+        client *Client
+}
+
+func (a *baseAdapter) do(ctx context.Context, method, path string, body any, result any) error <span class="cov8" title="1">{
+        return doRequestJSON(ctx, a.client.httpClient, a.client.baseAPIURL, a.client.apiKey, a.client.userAgent, method, path, body, result)
+}</span>
+
+// streamAdapter uses video.bunnycdn.com for video/collection operations.
+type streamAdapter struct {
+        client *Client
+}
+
+func (a *streamAdapter) do(ctx context.Context, method, path string, body any, result any) error <span class="cov8" title="1">{
+        return doRequestJSON(ctx, a.client.httpClient, a.client.streamAPIURL, a.client.apiKey, a.client.userAgent, method, path, body, result)
+}</span>
+
+func (a *streamAdapter) doRaw(ctx context.Context, method, path string, body io.Reader, contentType string) error <span class="cov8" title="1">{
+        return doRequestRaw(ctx, a.client.httpClient, a.client.streamAPIURL, a.client.apiKey, a.client.userAgent, method, path, body, contentType)
+}</span>
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package stream
+
+import (
+        "context"
+        "fmt"
+        "net/http"
+        "net/url"
+        "strconv"
+)
+
+// CollectionService provides methods for managing collections within a library.
+type CollectionService interface {
+        List(ctx context.Context, opts *CollectionListOptions) (*CollectionListResponse, error)
+        Get(ctx context.Context, collectionID string) (*Collection, error)
+        Create(ctx context.Context, req *CreateCollectionRequest) (*Collection, error)
+        Update(ctx context.Context, collectionID string, req *UpdateCollectionRequest) (*Collection, error)
+        Delete(ctx context.Context, collectionID string) error
+}
+
+// CollectionListResponse represents a paginated list of collections.
+type CollectionListResponse struct {
+        ItemsPerPage int          `json:"itemsPerPage"`
+        CurrentPage  int          `json:"currentPage"`
+        TotalItems   int          `json:"totalItems"`
+        Items        []Collection `json:"items"`
+}
+
+// HasMore returns true if there are more pages to fetch.
+func (r *CollectionListResponse) HasMore() bool <span class="cov0" title="0">{
+        return r.CurrentPage*r.ItemsPerPage &lt; r.TotalItems
+}</span>
+
+type collectionService struct {
+        client    httpClient
+        libraryID int64
+}
+
+func newCollectionService(client httpClient, libraryID int64) CollectionService <span class="cov8" title="1">{
+        return &amp;collectionService{client: client, libraryID: libraryID}
+}</span>
+
+// List returns a paginated list of collections in the library.
+func (s *collectionService) List(ctx context.Context, opts *CollectionListOptions) (*CollectionListResponse, error) <span class="cov8" title="1">{
+        path := fmt.Sprintf("/library/%d/collections", s.libraryID)
+        if opts != nil </span><span class="cov0" title="0">{
+                path = path + "?" + buildCollectionListQuery(opts)
+        }</span>
+
+        <span class="cov8" title="1">var resp CollectionListResponse
+        if err := s.client.do(ctx, http.MethodGet, path, nil, &amp;resp); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return &amp;resp, nil</span>
+}
+
+// Get returns a single collection by ID.
+func (s *collectionService) Get(ctx context.Context, collectionID string) (*Collection, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/library/%d/collections/%s", s.libraryID, collectionID)
+
+        var collection Collection
+        if err := s.client.do(ctx, http.MethodGet, path, nil, &amp;collection); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;collection, nil</span>
+}
+
+// Create creates a new collection in the library.
+func (s *collectionService) Create(ctx context.Context, req *CreateCollectionRequest) (*Collection, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/library/%d/collections", s.libraryID)
+
+        var collection Collection
+        if err := s.client.do(ctx, http.MethodPost, path, req, &amp;collection); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;collection, nil</span>
+}
+
+// Update updates a collection's name.
+func (s *collectionService) Update(ctx context.Context, collectionID string, req *UpdateCollectionRequest) (*Collection, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/library/%d/collections/%s", s.libraryID, collectionID)
+
+        var collection Collection
+        if err := s.client.do(ctx, http.MethodPost, path, req, &amp;collection); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;collection, nil</span>
+}
+
+// Delete permanently deletes a collection.
+func (s *collectionService) Delete(ctx context.Context, collectionID string) error <span class="cov0" title="0">{
+        path := fmt.Sprintf("/library/%d/collections/%s", s.libraryID, collectionID)
+        return s.client.do(ctx, http.MethodDelete, path, nil, nil)
+}</span>
+
+func buildCollectionListQuery(opts *CollectionListOptions) string <span class="cov0" title="0">{
+        params := url.Values{}
+        if opts.Page &gt; 0 </span><span class="cov0" title="0">{
+                params.Set("page", strconv.Itoa(opts.Page))
+        }</span>
+        <span class="cov0" title="0">if opts.ItemsPerPage &gt; 0 </span><span class="cov0" title="0">{
+                params.Set("itemsPerPage", strconv.Itoa(opts.ItemsPerPage))
+        }</span>
+        <span class="cov0" title="0">if opts.OrderBy != "" </span><span class="cov0" title="0">{
+                params.Set("orderBy", opts.OrderBy)
+        }</span>
+        <span class="cov0" title="0">if opts.IncludeThumbnails </span><span class="cov0" title="0">{
+                params.Set("includeThumbnails", "true")
+        }</span>
+        <span class="cov0" title="0">return params.Encode()</span>
+}
+</pre>
+		
+		<pre class="file" id="file15" style="display: none">package stream
+
+import (
+        "context"
+        "fmt"
+        "net/http"
+        "net/url"
+        "strconv"
+)
+
+// LibraryService provides methods for managing video libraries.
+type LibraryService interface {
+        List(ctx context.Context, opts *LibraryListOptions) (*LibraryListResponse, error)
+        Get(ctx context.Context, libraryID int64) (*Library, error)
+        Create(ctx context.Context, req *CreateLibraryRequest) (*Library, error)
+        Update(ctx context.Context, libraryID int64, req *UpdateLibraryRequest) (*Library, error)
+        Delete(ctx context.Context, libraryID int64) error
+        GetStatistics(ctx context.Context, libraryID int64, opts *StatisticsOptions) (*LibraryStatistics, error)
+}
+
+// LibraryListResponse represents a paginated list of libraries.
+type LibraryListResponse struct {
+        ItemsPerPage int       `json:"itemsPerPage"`
+        CurrentPage  int       `json:"currentPage"`
+        TotalItems   int       `json:"totalItems"`
+        Items        []Library `json:"items"`
+}
+
+// HasMore returns true if there are more pages to fetch.
+func (r *LibraryListResponse) HasMore() bool <span class="cov0" title="0">{
+        return r.CurrentPage*r.ItemsPerPage &lt; r.TotalItems
+}</span>
+
+// basicHTTPClient is a simpler interface for services that don't need raw body uploads.
+type basicHTTPClient interface {
+        do(ctx context.Context, method, path string, body any, result any) error
+}
+
+type libraryService struct {
+        client basicHTTPClient
+}
+
+func newLibraryService(client basicHTTPClient) LibraryService <span class="cov8" title="1">{
+        return &amp;libraryService{client: client}
+}</span>
+
+// List returns a paginated list of video libraries.
+func (s *libraryService) List(ctx context.Context, opts *LibraryListOptions) (*LibraryListResponse, error) <span class="cov8" title="1">{
+        path := "/videolibrary"
+        if opts != nil </span><span class="cov0" title="0">{
+                path = path + "?" + buildLibraryListQuery(opts)
+        }</span>
+
+        <span class="cov8" title="1">var resp LibraryListResponse
+        if err := s.client.do(ctx, http.MethodGet, path, nil, &amp;resp); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return &amp;resp, nil</span>
+}
+
+// Get returns a single library by ID.
+func (s *libraryService) Get(ctx context.Context, libraryID int64) (*Library, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/videolibrary/%d", libraryID)
+
+        var library Library
+        if err := s.client.do(ctx, http.MethodGet, path, nil, &amp;library); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;library, nil</span>
+}
+
+// Create creates a new video library.
+func (s *libraryService) Create(ctx context.Context, req *CreateLibraryRequest) (*Library, error) <span class="cov0" title="0">{
+        var library Library
+        if err := s.client.do(ctx, http.MethodPost, "/videolibrary", req, &amp;library); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;library, nil</span>
+}
+
+// Update updates a library's settings.
+func (s *libraryService) Update(ctx context.Context, libraryID int64, req *UpdateLibraryRequest) (*Library, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/videolibrary/%d", libraryID)
+
+        var library Library
+        if err := s.client.do(ctx, http.MethodPost, path, req, &amp;library); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;library, nil</span>
+}
+
+// Delete permanently deletes a library and all its videos.
+func (s *libraryService) Delete(ctx context.Context, libraryID int64) error <span class="cov0" title="0">{
+        path := fmt.Sprintf("/videolibrary/%d", libraryID)
+        return s.client.do(ctx, http.MethodDelete, path, nil, nil)
+}</span>
+
+// GetStatistics returns statistics for a library.
+func (s *libraryService) GetStatistics(ctx context.Context, libraryID int64, opts *StatisticsOptions) (*LibraryStatistics, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/videolibrary/%d/statistics", libraryID)
+        if opts != nil </span><span class="cov0" title="0">{
+                path = path + "?" + buildStatisticsQuery(opts)
+        }</span>
+
+        <span class="cov0" title="0">var resp LibraryStatistics
+        if err := s.client.do(ctx, http.MethodGet, path, nil, &amp;resp); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;resp, nil</span>
+}
+
+func buildLibraryListQuery(opts *LibraryListOptions) string <span class="cov0" title="0">{
+        params := url.Values{}
+        if opts.Page &gt; 0 </span><span class="cov0" title="0">{
+                params.Set("page", strconv.Itoa(opts.Page))
+        }</span>
+        <span class="cov0" title="0">if opts.ItemsPerPage &gt; 0 </span><span class="cov0" title="0">{
+                params.Set("itemsPerPage", strconv.Itoa(opts.ItemsPerPage))
+        }</span>
+        <span class="cov0" title="0">return params.Encode()</span>
+}
+</pre>
+		
+		<pre class="file" id="file16" style="display: none">package stream
+
+import (
+        "bytes"
+        "context"
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "net/url"
+        "strconv"
+
+        "github.com/geraldo/bunny-sdk-go/internal"
+)
+
+// VideoService provides methods for managing videos in a library.
+type VideoService interface {
+        List(ctx context.Context, opts *VideoListOptions) (*VideoListResponse, error)
+        Get(ctx context.Context, videoID string) (*Video, error)
+        Create(ctx context.Context, req *CreateVideoRequest) (*Video, error)
+        Update(ctx context.Context, videoID string, req *UpdateVideoRequest) (*Video, error)
+        Delete(ctx context.Context, videoID string) error
+        Upload(ctx context.Context, videoID string, reader io.Reader) error
+        FetchFromURL(ctx context.Context, req *FetchVideoRequest) (*FetchVideoResponse, error)
+        Reencode(ctx context.Context, videoID string, req *ReencodeRequest) error
+        AddCaption(ctx context.Context, videoID string, req *AddCaptionRequest) error
+        DeleteCaption(ctx context.Context, videoID, srclang string) error
+        SetThumbnail(ctx context.Context, videoID string, req *SetThumbnailRequest) (*SetThumbnailResponse, error)
+        GetHeatmap(ctx context.Context, videoID string) (*HeatmapData, error)
+        GetStatistics(ctx context.Context, videoID string, opts *StatisticsOptions) (*VideoStatistics, error)
+        GetPlaybackInfo(ctx context.Context, videoID string) (*PlaybackInfo, error)
+}
+
+// VideoListResponse represents a paginated list of videos.
+type VideoListResponse struct {
+        ItemsPerPage int     `json:"itemsPerPage"`
+        CurrentPage  int     `json:"currentPage"`
+        TotalItems   int     `json:"totalItems"`
+        Items        []Video `json:"items"`
+}
+
+// HasMore returns true if there are more pages to fetch.
+func (r *VideoListResponse) HasMore() bool <span class="cov0" title="0">{
+        return r.CurrentPage*r.ItemsPerPage &lt; r.TotalItems
+}</span>
+
+type videoService struct {
+        client    httpClient
+        libraryID int64
+}
+
+type httpClient interface {
+        do(ctx context.Context, method, path string, body any, result any) error
+        doRaw(ctx context.Context, method, path string, body io.Reader, contentType string) error
+}
+
+func newVideoService(client httpClient, libraryID int64) VideoService <span class="cov8" title="1">{
+        return &amp;videoService{client: client, libraryID: libraryID}
+}</span>
+
+// List returns a paginated list of videos in the library.
+func (s *videoService) List(ctx context.Context, opts *VideoListOptions) (*VideoListResponse, error) <span class="cov8" title="1">{
+        path := fmt.Sprintf("/library/%d/videos", s.libraryID)
+        if opts != nil </span><span class="cov0" title="0">{
+                path = path + "?" + buildVideoListQuery(opts)
+        }</span>
+
+        <span class="cov8" title="1">var resp VideoListResponse
+        if err := s.client.do(ctx, http.MethodGet, path, nil, &amp;resp); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return &amp;resp, nil</span>
+}
+
+// Get returns a single video by ID.
+func (s *videoService) Get(ctx context.Context, videoID string) (*Video, error) <span class="cov8" title="1">{
+        path := fmt.Sprintf("/library/%d/videos/%s", s.libraryID, videoID)
+
+        var video Video
+        if err := s.client.do(ctx, http.MethodGet, path, nil, &amp;video); err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return &amp;video, nil</span>
+}
+
+// Create creates a new video entry (before uploading the actual video file).
+func (s *videoService) Create(ctx context.Context, req *CreateVideoRequest) (*Video, error) <span class="cov8" title="1">{
+        path := fmt.Sprintf("/library/%d/videos", s.libraryID)
+
+        var video Video
+        if err := s.client.do(ctx, http.MethodPost, path, req, &amp;video); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return &amp;video, nil</span>
+}
+
+// Update updates video metadata.
+func (s *videoService) Update(ctx context.Context, videoID string, req *UpdateVideoRequest) (*Video, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/library/%d/videos/%s", s.libraryID, videoID)
+
+        var video Video
+        if err := s.client.do(ctx, http.MethodPost, path, req, &amp;video); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;video, nil</span>
+}
+
+// Delete permanently deletes a video.
+func (s *videoService) Delete(ctx context.Context, videoID string) error <span class="cov8" title="1">{
+        path := fmt.Sprintf("/library/%d/videos/%s", s.libraryID, videoID)
+        return s.client.do(ctx, http.MethodDelete, path, nil, nil)
+}</span>
+
+// Upload uploads a video file to an existing video entry.
+func (s *videoService) Upload(ctx context.Context, videoID string, reader io.Reader) error <span class="cov8" title="1">{
+        path := fmt.Sprintf("/library/%d/videos/%s", s.libraryID, videoID)
+        return s.client.doRaw(ctx, http.MethodPut, path, reader, "application/octet-stream")
+}</span>
+
+// FetchFromURL fetches a video from a remote URL.
+func (s *videoService) FetchFromURL(ctx context.Context, req *FetchVideoRequest) (*FetchVideoResponse, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/library/%d/videos/fetch", s.libraryID)
+
+        var resp FetchVideoResponse
+        if err := s.client.do(ctx, http.MethodPost, path, req, &amp;resp); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;resp, nil</span>
+}
+
+// Reencode triggers re-encoding of a video with optional resolution settings.
+func (s *videoService) Reencode(ctx context.Context, videoID string, req *ReencodeRequest) error <span class="cov0" title="0">{
+        path := fmt.Sprintf("/library/%d/videos/%s/reencode", s.libraryID, videoID)
+        return s.client.do(ctx, http.MethodPost, path, req, nil)
+}</span>
+
+// AddCaption adds a caption track to a video.
+func (s *videoService) AddCaption(ctx context.Context, videoID string, req *AddCaptionRequest) error <span class="cov0" title="0">{
+        path := fmt.Sprintf("/library/%d/videos/%s/captions", s.libraryID, videoID)
+        return s.client.do(ctx, http.MethodPost, path, req, nil)
+}</span>
+
+// DeleteCaption removes a caption track from a video.
+func (s *videoService) DeleteCaption(ctx context.Context, videoID, srclang string) error <span class="cov0" title="0">{
+        path := fmt.Sprintf("/library/%d/videos/%s/captions/%s", s.libraryID, videoID, srclang)
+        return s.client.do(ctx, http.MethodDelete, path, nil, nil)
+}</span>
+
+// SetThumbnail sets the video thumbnail from a specific timestamp.
+func (s *videoService) SetThumbnail(ctx context.Context, videoID string, req *SetThumbnailRequest) (*SetThumbnailResponse, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/library/%d/videos/%s/thumbnail", s.libraryID, videoID)
+
+        var resp SetThumbnailResponse
+        if err := s.client.do(ctx, http.MethodPost, path, req, &amp;resp); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;resp, nil</span>
+}
+
+// GetHeatmap returns engagement heatmap data for a video.
+func (s *videoService) GetHeatmap(ctx context.Context, videoID string) (*HeatmapData, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/library/%d/videos/%s/heatmap", s.libraryID, videoID)
+
+        var resp HeatmapData
+        if err := s.client.do(ctx, http.MethodGet, path, nil, &amp;resp); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;resp, nil</span>
+}
+
+// GetStatistics returns statistics for a video.
+func (s *videoService) GetStatistics(ctx context.Context, videoID string, opts *StatisticsOptions) (*VideoStatistics, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/library/%d/videos/%s/statistics", s.libraryID, videoID)
+        if opts != nil </span><span class="cov0" title="0">{
+                path = path + "?" + buildStatisticsQuery(opts)
+        }</span>
+
+        <span class="cov0" title="0">var resp VideoStatistics
+        if err := s.client.do(ctx, http.MethodGet, path, nil, &amp;resp); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;resp, nil</span>
+}
+
+// GetPlaybackInfo returns playback URLs for a video.
+func (s *videoService) GetPlaybackInfo(ctx context.Context, videoID string) (*PlaybackInfo, error) <span class="cov0" title="0">{
+        path := fmt.Sprintf("/library/%d/videos/%s/play", s.libraryID, videoID)
+
+        var resp PlaybackInfo
+        if err := s.client.do(ctx, http.MethodGet, path, nil, &amp;resp); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;resp, nil</span>
+}
+
+func buildVideoListQuery(opts *VideoListOptions) string <span class="cov0" title="0">{
+        params := url.Values{}
+        if opts.Page &gt; 0 </span><span class="cov0" title="0">{
+                params.Set("page", strconv.Itoa(opts.Page))
+        }</span>
+        <span class="cov0" title="0">if opts.ItemsPerPage &gt; 0 </span><span class="cov0" title="0">{
+                params.Set("itemsPerPage", strconv.Itoa(opts.ItemsPerPage))
+        }</span>
+        <span class="cov0" title="0">if opts.Search != "" </span><span class="cov0" title="0">{
+                params.Set("search", opts.Search)
+        }</span>
+        <span class="cov0" title="0">if opts.Collection != "" </span><span class="cov0" title="0">{
+                params.Set("collection", opts.Collection)
+        }</span>
+        <span class="cov0" title="0">if opts.OrderBy != "" </span><span class="cov0" title="0">{
+                params.Set("orderBy", opts.OrderBy)
+        }</span>
+        <span class="cov0" title="0">if opts.IncludeThumbnails </span><span class="cov0" title="0">{
+                params.Set("includeThumbnails", "true")
+        }</span>
+        <span class="cov0" title="0">return params.Encode()</span>
+}
+
+func buildStatisticsQuery(opts *StatisticsOptions) string <span class="cov0" title="0">{
+        params := url.Values{}
+        if opts.DateFrom != "" </span><span class="cov0" title="0">{
+                params.Set("dateFrom", opts.DateFrom)
+        }</span>
+        <span class="cov0" title="0">if opts.DateTo != "" </span><span class="cov0" title="0">{
+                params.Set("dateTo", opts.DateTo)
+        }</span>
+        <span class="cov0" title="0">return params.Encode()</span>
+}
+
+// doRequestJSON is a helper for JSON requests used by the stream client.
+func doRequestJSON(ctx context.Context, httpClient interface {
+        Do(req *http.Request) (*http.Response, error)
+}, baseURL, apiKey, userAgent, method, path string, body any, result any) error <span class="cov8" title="1">{
+        fullURL := baseURL + path
+
+        var bodyReader io.Reader
+        if body != nil </span><span class="cov8" title="1">{
+                jsonBody, err := json.Marshal(body)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to marshal request body: %w", err)
+                }</span>
+                <span class="cov8" title="1">bodyReader = bytes.NewReader(jsonBody)</span>
+        }
+
+        <span class="cov8" title="1">req, err := internal.NewRequest(ctx, method, fullURL, bodyReader)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">req.Header.Set("AccessKey", apiKey)
+        req.Header.Set("User-Agent", userAgent)
+        if body != nil </span><span class="cov8" title="1">{
+                req.Header.Set("Content-Type", "application/json")
+        }</span>
+        <span class="cov8" title="1">req.Header.Set("Accept", "application/json")
+
+        resp, err := httpClient.Do(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("request failed: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if resp.StatusCode &gt;= 400 </span><span class="cov8" title="1">{
+                return handleErrorResponse(resp)
+        }</span>
+
+        <span class="cov8" title="1">if result != nil &amp;&amp; resp.StatusCode != http.StatusNoContent </span><span class="cov8" title="1">{
+                defer resp.Body.Close()
+                if err := json.NewDecoder(resp.Body).Decode(result); err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to decode response: %w", err)
+                }</span>
+        } else<span class="cov8" title="1"> {
+                resp.Body.Close()
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// doRequestRaw is a helper for raw body requests (file uploads).
+func doRequestRaw(ctx context.Context, httpClient interface {
+        Do(req *http.Request) (*http.Response, error)
+}, baseURL, apiKey, userAgent, method, path string, body io.Reader, contentType string) error <span class="cov8" title="1">{
+        fullURL := baseURL + path
+
+        req, err := internal.NewRequest(ctx, method, fullURL, body)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">req.Header.Set("AccessKey", apiKey)
+        req.Header.Set("User-Agent", userAgent)
+        if contentType != "" </span><span class="cov8" title="1">{
+                req.Header.Set("Content-Type", contentType)
+        }</span>
+
+        <span class="cov8" title="1">resp, err := httpClient.Do(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("request failed: %w", err)
+        }</span>
+        <span class="cov8" title="1">defer resp.Body.Close()
+
+        if resp.StatusCode &gt;= 400 </span><span class="cov0" title="0">{
+                return handleErrorResponse(resp)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+func handleErrorResponse(resp *http.Response) error <span class="cov8" title="1">{
+        body, err := internal.ReadResponseBody(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                return newAPIError(resp.StatusCode, "failed to read error response", "", "")
+        }</span>
+
+        <span class="cov8" title="1">errResp := internal.ParseErrorResponse(body)
+        if errResp != nil &amp;&amp; errResp.Message != "" </span><span class="cov8" title="1">{
+                return newAPIError(resp.StatusCode, errResp.Message, errResp.ErrorKey, errResp.Field)
+        }</span>
+
+        <span class="cov0" title="0">return newAPIError(resp.StatusCode, string(body), "", "")</span>
+}
+
+// APIError represents an error from the Bunny.net API.
+type APIError struct {
+        StatusCode int
+        Message    string
+        ErrorKey   string
+        Field      string
+}
+
+func (e *APIError) Error() string <span class="cov8" title="1">{
+        if e.Field != "" </span><span class="cov0" title="0">{
+                return fmt.Sprintf("bunny stream: %s (status: %d, field: %s)", e.Message, e.StatusCode, e.Field)
+        }</span>
+        <span class="cov8" title="1">if e.ErrorKey != "" </span><span class="cov0" title="0">{
+                return fmt.Sprintf("bunny stream: %s (status: %d, key: %s)", e.Message, e.StatusCode, e.ErrorKey)
+        }</span>
+        <span class="cov8" title="1">return fmt.Sprintf("bunny stream: %s (status: %d)", e.Message, e.StatusCode)</span>
+}
+
+func newAPIError(statusCode int, message, errorKey, field string) error <span class="cov8" title="1">{
+        return &amp;APIError{
+                StatusCode: statusCode,
+                Message:    message,
+                ErrorKey:   errorKey,
+                Field:      field,
+        }
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

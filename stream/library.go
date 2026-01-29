@@ -31,17 +31,22 @@ func (r *LibraryListResponse) HasMore() bool {
 	return r.CurrentPage*r.ItemsPerPage < r.TotalItems
 }
 
-type libraryService struct {
-	client httpClient
+// basicHTTPClient is a simpler interface for services that don't need raw body uploads.
+type basicHTTPClient interface {
+	do(ctx context.Context, method, path string, body any, result any) error
 }
 
-func newLibraryService(client httpClient) LibraryService {
+type libraryService struct {
+	client basicHTTPClient
+}
+
+func newLibraryService(client basicHTTPClient) LibraryService {
 	return &libraryService{client: client}
 }
 
 // List returns a paginated list of video libraries.
 func (s *libraryService) List(ctx context.Context, opts *LibraryListOptions) (*LibraryListResponse, error) {
-	path := "/library"
+	path := "/videolibrary"
 	if opts != nil {
 		path = path + "?" + buildLibraryListQuery(opts)
 	}
@@ -55,7 +60,7 @@ func (s *libraryService) List(ctx context.Context, opts *LibraryListOptions) (*L
 
 // Get returns a single library by ID.
 func (s *libraryService) Get(ctx context.Context, libraryID int64) (*Library, error) {
-	path := fmt.Sprintf("/library/%d", libraryID)
+	path := fmt.Sprintf("/videolibrary/%d", libraryID)
 
 	var library Library
 	if err := s.client.do(ctx, http.MethodGet, path, nil, &library); err != nil {
@@ -67,7 +72,7 @@ func (s *libraryService) Get(ctx context.Context, libraryID int64) (*Library, er
 // Create creates a new video library.
 func (s *libraryService) Create(ctx context.Context, req *CreateLibraryRequest) (*Library, error) {
 	var library Library
-	if err := s.client.do(ctx, http.MethodPost, "/library", req, &library); err != nil {
+	if err := s.client.do(ctx, http.MethodPost, "/videolibrary", req, &library); err != nil {
 		return nil, err
 	}
 	return &library, nil
@@ -75,7 +80,7 @@ func (s *libraryService) Create(ctx context.Context, req *CreateLibraryRequest) 
 
 // Update updates a library's settings.
 func (s *libraryService) Update(ctx context.Context, libraryID int64, req *UpdateLibraryRequest) (*Library, error) {
-	path := fmt.Sprintf("/library/%d", libraryID)
+	path := fmt.Sprintf("/videolibrary/%d", libraryID)
 
 	var library Library
 	if err := s.client.do(ctx, http.MethodPost, path, req, &library); err != nil {
@@ -86,13 +91,13 @@ func (s *libraryService) Update(ctx context.Context, libraryID int64, req *Updat
 
 // Delete permanently deletes a library and all its videos.
 func (s *libraryService) Delete(ctx context.Context, libraryID int64) error {
-	path := fmt.Sprintf("/library/%d", libraryID)
+	path := fmt.Sprintf("/videolibrary/%d", libraryID)
 	return s.client.do(ctx, http.MethodDelete, path, nil, nil)
 }
 
 // GetStatistics returns statistics for a library.
 func (s *libraryService) GetStatistics(ctx context.Context, libraryID int64, opts *StatisticsOptions) (*LibraryStatistics, error) {
-	path := fmt.Sprintf("/library/%d/statistics", libraryID)
+	path := fmt.Sprintf("/videolibrary/%d/statistics", libraryID)
 	if opts != nil {
 		path = path + "?" + buildStatisticsQuery(opts)
 	}

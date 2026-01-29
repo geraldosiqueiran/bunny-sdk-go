@@ -1,0 +1,58 @@
+	github.com/geraldo/bunny-sdk-go		coverage: 0.0% of statements
+	github.com/geraldo/bunny-sdk-go/cmd/test		coverage: 0.0% of statements
+	github.com/geraldo/bunny-sdk-go/internal		coverage: 0.0% of statements
+	github.com/geraldo/bunny-sdk-go/internal/testutil		coverage: 0.0% of statements
+=== RUN   TestNewClient
+--- PASS: TestNewClient (0.00s)
+=== RUN   TestZoneService_List
+--- PASS: TestZoneService_List (0.00s)
+=== RUN   TestZoneService_Get
+--- PASS: TestZoneService_Get (0.00s)
+=== RUN   TestZoneService_Create
+--- PASS: TestZoneService_Create (0.00s)
+=== RUN   TestZoneService_Delete
+--- PASS: TestZoneService_Delete (0.00s)
+=== RUN   TestFileService_Upload
+--- PASS: TestFileService_Upload (0.00s)
+=== RUN   TestFileService_Download
+--- PASS: TestFileService_Download (0.00s)
+=== RUN   TestFileService_List
+--- PASS: TestFileService_List (0.00s)
+=== RUN   TestFileService_Delete
+--- PASS: TestFileService_Delete (0.00s)
+=== RUN   TestRegionBaseURL
+=== RUN   TestRegionBaseURL/de
+=== RUN   TestRegionBaseURL/ny
+=== RUN   TestRegionBaseURL/sg
+=== RUN   TestRegionBaseURL/uk
+--- PASS: TestRegionBaseURL (0.00s)
+    --- PASS: TestRegionBaseURL/de (0.00s)
+    --- PASS: TestRegionBaseURL/ny (0.00s)
+    --- PASS: TestRegionBaseURL/sg (0.00s)
+    --- PASS: TestRegionBaseURL/uk (0.00s)
+PASS
+coverage: 49.3% of statements
+ok  	github.com/geraldo/bunny-sdk-go/storage	0.011s	coverage: 49.3% of statements
+=== RUN   TestNewClient
+--- PASS: TestNewClient (0.00s)
+=== RUN   TestNewClientWithOptions
+--- PASS: TestNewClientWithOptions (0.00s)
+=== RUN   TestVideoService_List
+--- PASS: TestVideoService_List (0.00s)
+=== RUN   TestVideoService_Get
+--- PASS: TestVideoService_Get (0.00s)
+=== RUN   TestVideoService_Create
+--- PASS: TestVideoService_Create (0.00s)
+=== RUN   TestVideoService_Delete
+--- PASS: TestVideoService_Delete (0.00s)
+=== RUN   TestVideoService_Upload
+--- PASS: TestVideoService_Upload (0.00s)
+=== RUN   TestLibraryService_List
+--- PASS: TestLibraryService_List (0.00s)
+=== RUN   TestCollectionService_List
+--- PASS: TestCollectionService_List (0.00s)
+=== RUN   TestErrorHandling
+--- PASS: TestErrorHandling (0.00s)
+PASS
+coverage: 38.8% of statements
+ok  	github.com/geraldo/bunny-sdk-go/stream	0.010s	coverage: 38.8% of statements
