@@ -13,6 +13,16 @@ const (
 	VideoStateError      VideoState = "error"
 )
 
+// OutputCodec represents video output codec options.
+type OutputCodec int
+
+const (
+	OutputCodecX264 OutputCodec = 0
+	OutputCodecVP9  OutputCodec = 1
+	OutputCodecHEVC OutputCodec = 2
+	OutputCodecAV1  OutputCodec = 3
+)
+
 // Video represents a video in a Bunny Stream library.
 type Video struct {
 	VideoID              string     `json:"videoId"`
@@ -262,4 +272,168 @@ type LibraryListOptions struct {
 type StatisticsOptions struct {
 	DateFrom string `url:"dateFrom,omitempty"` // ISO 8601 date
 	DateTo   string `url:"dateTo,omitempty"`   // ISO 8601 date
+}
+
+// CleanupResolutionsOptions specifies options for cleanup operation.
+type CleanupResolutionsOptions struct {
+	ResolutionsToDelete            string `url:"resolutionsToDelete,omitempty"`
+	DeleteNonConfiguredResolutions bool   `url:"deleteNonConfiguredResolutions,omitempty"`
+	DeleteOriginal                 bool   `url:"deleteOriginal,omitempty"`
+	DeleteMp4Files                 bool   `url:"deleteMp4Files,omitempty"`
+	DryRun                         bool   `url:"dryRun,omitempty"`
+}
+
+// StatusResponse represents a generic status response.
+type StatusResponse struct {
+	Success    bool   `json:"success"`
+	Message    string `json:"message,omitempty"`
+	StatusCode int    `json:"statusCode"`
+}
+
+// HeatmapDataOptions specifies options for heatmap data request.
+type HeatmapDataOptions struct {
+	Token   string `url:"token,omitempty"`
+	Expires int64  `url:"expires,omitempty"`
+}
+
+// VideoPlayData represents video playback data with heatmap.
+type VideoPlayData struct {
+	Video                *Video  `json:"video,omitempty"`
+	LibraryName          string  `json:"libraryName,omitempty"`
+	CaptionsPath         string  `json:"captionsPath,omitempty"`
+	SeekPath             string  `json:"seekPath,omitempty"`
+	ThumbnailURL         string  `json:"thumbnailUrl,omitempty"`
+	FallbackURL          string  `json:"fallbackUrl,omitempty"`
+	VideoPlaylistURL     string  `json:"videoPlaylistUrl,omitempty"`
+	OriginalURL          string  `json:"originalUrl,omitempty"`
+	PreviewURL           string  `json:"previewUrl,omitempty"`
+	Controls             string  `json:"controls,omitempty"`
+	EnableDRM            bool    `json:"enableDRM"`
+	DRMVersion           int     `json:"drmVersion"`
+	PlayerKeyColor       string  `json:"playerKeyColor,omitempty"`
+	VastTagURL           string  `json:"vastTagUrl,omitempty"`
+	CaptionsFontSize     int     `json:"captionsFontSize"`
+	CaptionsFontColor    string  `json:"captionsFontColor,omitempty"`
+	CaptionsBackground   string  `json:"captionsBackground,omitempty"`
+	UILanguage           string  `json:"uiLanguage,omitempty"`
+	AllowEarlyPlay       bool    `json:"allowEarlyPlay"`
+	TokenAuthEnabled     bool    `json:"tokenAuthEnabled"`
+	EnableMP4Fallback    bool    `json:"enableMP4Fallback"`
+	ShowHeatmap          bool    `json:"showHeatmap"`
+	FontFamily           string  `json:"fontFamily,omitempty"`
+	PlaybackSpeeds       string  `json:"playbackSpeeds,omitempty"`
+	RememberPlayerPosition bool  `json:"rememberPlayerPosition"`
+}
+
+// EncodedResolution represents storage for a single codec/resolution.
+type EncodedResolution struct {
+	Codec      string `json:"codec,omitempty"`
+	Resolution string `json:"resolution,omitempty"`
+	Size       int64  `json:"size"`
+}
+
+// StorageSizeData represents video storage breakdown.
+type StorageSizeData struct {
+	Encoded       []EncodedResolution `json:"encoded,omitempty"`
+	Thumbnails    int64               `json:"thumbnails"`
+	Previews      int64               `json:"previews"`
+	Originals     int64               `json:"originals"`
+	Mp4Fallback   int64               `json:"mp4Fallback"`
+	Miscellaneous int64               `json:"miscellaneous"`
+	CalculatedAt  string              `json:"calculatedAt,omitempty"`
+}
+
+// StorageSizeResponse represents the storage size API response.
+type StorageSizeResponse struct {
+	Success    bool             `json:"success"`
+	Message    string           `json:"message,omitempty"`
+	StatusCode int              `json:"statusCode"`
+	Data       *StorageSizeData `json:"data,omitempty"`
+}
+
+// RepackageOptions specifies options for repackage operation.
+type RepackageOptions struct {
+	KeepOriginalFiles bool `url:"keepOriginalFiles,omitempty"`
+}
+
+// TranscribeRequest represents a request to transcribe a video.
+type TranscribeRequest struct {
+	TargetLanguages     []string `json:"targetLanguages,omitempty"`
+	GenerateTitle       *bool    `json:"generateTitle,omitempty"`
+	GenerateDescription *bool    `json:"generateDescription,omitempty"`
+	GenerateChapters    *bool    `json:"generateChapters,omitempty"`
+	GenerateMoments     *bool    `json:"generateMoments,omitempty"`
+	SourceLanguage      string   `json:"sourceLanguage,omitempty"`
+}
+
+// TranscribeOptions specifies options for transcribe operation.
+type TranscribeOptions struct {
+	Force bool `url:"force,omitempty"`
+}
+
+// SmartActionsRequest represents a request to trigger smart actions.
+type SmartActionsRequest struct {
+	GenerateTitle       *bool  `json:"generateTitle,omitempty"`
+	GenerateDescription *bool  `json:"generateDescription,omitempty"`
+	GenerateChapters    *bool  `json:"generateChapters,omitempty"`
+	GenerateMoments     *bool  `json:"generateMoments,omitempty"`
+	SourceLanguage      string `json:"sourceLanguage,omitempty"`
+}
+
+// ResolutionReference represents a resolution with codec info.
+type ResolutionReference struct {
+	Resolution string `json:"resolution,omitempty"`
+	Codec      string `json:"codec,omitempty"`
+}
+
+// StorageObject represents a storage object entry.
+type StorageObject struct {
+	Path       string `json:"path,omitempty"`
+	Size       int64  `json:"size"`
+	Resolution string `json:"resolution,omitempty"`
+}
+
+// ResolutionsInfoData represents video resolution details.
+type ResolutionsInfoData struct {
+	VideoID                          string                `json:"videoId,omitempty"`
+	VideoLibraryID                   int64                 `json:"videoLibraryId"`
+	AvailableResolutions             []string              `json:"availableResolutions,omitempty"`
+	ConfiguredResolutions            []string              `json:"configuredResolutions,omitempty"`
+	PlaylistResolutions              []ResolutionReference `json:"playlistResolutions,omitempty"`
+	StorageResolutions               []ResolutionReference `json:"storageResolutions,omitempty"`
+	Mp4Resolutions                   []ResolutionReference `json:"mp4Resolutions,omitempty"`
+	StorageObjects                   []StorageObject       `json:"storageObjects,omitempty"`
+	OldResolutions                   []StorageObject       `json:"oldResolutions,omitempty"`
+	HasBothOldAndNewResolutionFormat bool                  `json:"hasBothOldAndNewResolutionFormat"`
+	HasOriginal                      bool                  `json:"hasOriginal"`
+}
+
+// ResolutionsInfoResponse represents the resolutions info API response.
+type ResolutionsInfoResponse struct {
+	Success    bool                 `json:"success"`
+	Message    string               `json:"message,omitempty"`
+	StatusCode int                  `json:"statusCode"`
+	Data       *ResolutionsInfoData `json:"data,omitempty"`
+}
+
+// OEmbedOptions specifies options for oEmbed request.
+type OEmbedOptions struct {
+	URL       string `url:"url,omitempty"`
+	MaxWidth  int    `url:"maxWidth,omitempty"`
+	MaxHeight int    `url:"maxHeight,omitempty"`
+	Token     string `url:"token,omitempty"`
+	Expires   int64  `url:"expires,omitempty"`
+}
+
+// OEmbedResponse represents an oEmbed response.
+type OEmbedResponse struct {
+	Version      string `json:"version,omitempty"`
+	Title        string `json:"title,omitempty"`
+	Type         string `json:"type,omitempty"`
+	ThumbnailURL string `json:"thumbnail_url,omitempty"`
+	Width        int    `json:"width"`
+	Height       int    `json:"height"`
+	HTML         string `json:"html,omitempty"`
+	ProviderName string `json:"provider_name,omitempty"`
+	ProviderURL  string `json:"provider_url,omitempty"`
 }

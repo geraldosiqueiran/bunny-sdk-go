@@ -29,6 +29,14 @@ type VideoService interface {
 	GetHeatmap(ctx context.Context, videoID string) (*HeatmapData, error)
 	GetStatistics(ctx context.Context, videoID string, opts *StatisticsOptions) (*VideoStatistics, error)
 	GetPlaybackInfo(ctx context.Context, videoID string) (*PlaybackInfo, error)
+	AddOutputCodec(ctx context.Context, videoID string, codec OutputCodec) (*Video, error)
+	CleanupUnconfiguredResolutions(ctx context.Context, videoID string, opts *CleanupResolutionsOptions) (*StatusResponse, error)
+	GetHeatmapData(ctx context.Context, videoID string, opts *HeatmapDataOptions) (*VideoPlayData, error)
+	GetStorageSizeInfo(ctx context.Context, videoID string) (*StorageSizeResponse, error)
+	Repackage(ctx context.Context, videoID string, opts *RepackageOptions) (*Video, error)
+	Transcribe(ctx context.Context, videoID string, req *TranscribeRequest, opts *TranscribeOptions) (*StatusResponse, error)
+	TriggerSmartActions(ctx context.Context, videoID string, req *SmartActionsRequest) (*StatusResponse, error)
+	GetResolutionsInfo(ctx context.Context, videoID string) (*ResolutionsInfoResponse, error)
 }
 
 // VideoListResponse represents a paginated list of videos.
@@ -193,6 +201,106 @@ func (s *videoService) GetPlaybackInfo(ctx context.Context, videoID string) (*Pl
 	return &resp, nil
 }
 
+// AddOutputCodec adds an output codec to a video.
+func (s *videoService) AddOutputCodec(ctx context.Context, videoID string, codec OutputCodec) (*Video, error) {
+	path := fmt.Sprintf("/library/%d/videos/%s/outputs/%d", s.libraryID, videoID, codec)
+
+	var video Video
+	if err := s.client.do(ctx, http.MethodPut, path, nil, &video); err != nil {
+		return nil, err
+	}
+	return &video, nil
+}
+
+// CleanupUnconfiguredResolutions cleans up unconfigured video resolutions.
+func (s *videoService) CleanupUnconfiguredResolutions(ctx context.Context, videoID string, opts *CleanupResolutionsOptions) (*StatusResponse, error) {
+	path := fmt.Sprintf("/library/%d/videos/%s/resolutions/cleanup", s.libraryID, videoID)
+	if opts != nil {
+		path = path + "?" + buildCleanupResolutionsQuery(opts)
+	}
+
+	var resp StatusResponse
+	if err := s.client.do(ctx, http.MethodPost, path, nil, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// GetHeatmapData returns video playback data with heatmap.
+func (s *videoService) GetHeatmapData(ctx context.Context, videoID string, opts *HeatmapDataOptions) (*VideoPlayData, error) {
+	path := fmt.Sprintf("/library/%d/videos/%s/play/heatmap", s.libraryID, videoID)
+	if opts != nil {
+		path = path + "?" + buildHeatmapDataQuery(opts)
+	}
+
+	var resp VideoPlayData
+	if err := s.client.do(ctx, http.MethodGet, path, nil, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// GetStorageSizeInfo returns storage size breakdown for a video.
+func (s *videoService) GetStorageSizeInfo(ctx context.Context, videoID string) (*StorageSizeResponse, error) {
+	path := fmt.Sprintf("/library/%d/videos/%s/storage", s.libraryID, videoID)
+
+	var resp StorageSizeResponse
+	if err := s.client.do(ctx, http.MethodGet, path, nil, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// Repackage repackages a video.
+func (s *videoService) Repackage(ctx context.Context, videoID string, opts *RepackageOptions) (*Video, error) {
+	path := fmt.Sprintf("/library/%d/videos/%s/repackage", s.libraryID, videoID)
+	if opts != nil {
+		path = path + "?" + buildRepackageQuery(opts)
+	}
+
+	var video Video
+	if err := s.client.do(ctx, http.MethodPost, path, nil, &video); err != nil {
+		return nil, err
+	}
+	return &video, nil
+}
+
+// Transcribe triggers video transcription.
+func (s *videoService) Transcribe(ctx context.Context, videoID string, req *TranscribeRequest, opts *TranscribeOptions) (*StatusResponse, error) {
+	path := fmt.Sprintf("/library/%d/videos/%s/transcribe", s.libraryID, videoID)
+	if opts != nil && opts.Force {
+		path = path + "?force=true"
+	}
+
+	var resp StatusResponse
+	if err := s.client.do(ctx, http.MethodPost, path, req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// TriggerSmartActions triggers smart actions on a video.
+func (s *videoService) TriggerSmartActions(ctx context.Context, videoID string, req *SmartActionsRequest) (*StatusResponse, error) {
+	path := fmt.Sprintf("/library/%d/videos/%s/smart", s.libraryID, videoID)
+
+	var resp StatusResponse
+	if err := s.client.do(ctx, http.MethodPost, path, req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// GetResolutionsInfo returns resolution information for a video.
+func (s *videoService) GetResolutionsInfo(ctx context.Context, videoID string) (*ResolutionsInfoResponse, error) {
+	path := fmt.Sprintf("/library/%d/videos/%s/resolutions", s.libraryID, videoID)
+
+	var resp ResolutionsInfoResponse
+	if err := s.client.do(ctx, http.MethodGet, path, nil, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
 func buildVideoListQuery(opts *VideoListOptions) string {
 	params := url.Values{}
 	if opts.Page > 0 {
@@ -223,6 +331,45 @@ func buildStatisticsQuery(opts *StatisticsOptions) string {
 	}
 	if opts.DateTo != "" {
 		params.Set("dateTo", opts.DateTo)
+	}
+	return params.Encode()
+}
+
+func buildCleanupResolutionsQuery(opts *CleanupResolutionsOptions) string {
+	params := url.Values{}
+	if opts.ResolutionsToDelete != "" {
+		params.Set("resolutionsToDelete", opts.ResolutionsToDelete)
+	}
+	if opts.DeleteNonConfiguredResolutions {
+		params.Set("deleteNonConfiguredResolutions", "true")
+	}
+	if opts.DeleteOriginal {
+		params.Set("deleteOriginal", "true")
+	}
+	if opts.DeleteMp4Files {
+		params.Set("deleteMp4Files", "true")
+	}
+	if opts.DryRun {
+		params.Set("dryRun", "true")
+	}
+	return params.Encode()
+}
+
+func buildHeatmapDataQuery(opts *HeatmapDataOptions) string {
+	params := url.Values{}
+	if opts.Token != "" {
+		params.Set("token", opts.Token)
+	}
+	if opts.Expires > 0 {
+		params.Set("expires", strconv.FormatInt(opts.Expires, 10))
+	}
+	return params.Encode()
+}
+
+func buildRepackageQuery(opts *RepackageOptions) string {
+	params := url.Values{}
+	if opts.KeepOriginalFiles {
+		params.Set("keepOriginalFiles", "true")
 	}
 	return params.Encode()
 }

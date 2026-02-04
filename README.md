@@ -1,6 +1,6 @@
 # Bunny.net Go SDK
 
-Idiomatic Go SDK for [Bunny.net](https://bunny.net) Stream and Storage APIs.
+Idiomatic Go SDK for [Bunny.net](https://bunny.net) Stream, Storage, and Shield/WAF APIs.
 
 ## Installation
 
@@ -12,6 +12,7 @@ go get github.com/geraldo/bunny-sdk-go
 
 - **Stream API**: Videos, Libraries, Collections management
 - **Storage API**: Zone management and file operations
+- **Shield API**: WAF rules, access lists, rate limiting, bot detection, metrics
 - Interface-based design for easy mocking
 - Context support on all operations
 - Functional options pattern
@@ -163,6 +164,80 @@ func main() {
 }
 ```
 
+### Shield API - WAF & Security
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+
+    "github.com/geraldo/bunny-sdk-go/shield"
+)
+
+func main() {
+    // Use Global API Key for Shield API
+    client := shield.NewClient(os.Getenv("BUNNY_API_KEY"))
+    ctx := context.Background()
+
+    // List Shield zones
+    zones, err := client.Zones().List(ctx)
+    if err != nil {
+        panic(err)
+    }
+
+    for _, z := range zones.Items {
+        fmt.Printf("Zone: %s (%s)\n", z.Name, z.ID)
+    }
+
+    // Create a rate limit rule
+    rateLimit, err := client.RateLimits().Create(ctx, &shield.CreateRateLimitRequest{
+        Name:              "API Rate Limit",
+        Path:              "/api/*",
+        RequestsPerSecond: 100,
+        ShieldZoneID:      zones.Items[0].ID,
+        Action:            "Block",
+        IsActive:          true,
+    })
+    if err != nil {
+        panic(err)
+    }
+    fmt.Printf("Created rate limit: %s\n", rateLimit.Name)
+
+    // Add IP to access list
+    entry, err := client.AccessLists(zones.Items[0].ID).Add(ctx, &shield.AddAccessListEntryRequest{
+        Type:    "IP",
+        Value:   "192.168.1.100",
+        Action:  "Allow",
+        Comment: "Office IP",
+    })
+    if err != nil {
+        panic(err)
+    }
+    fmt.Printf("Added to access list: %s\n", entry.Value)
+
+    // Get security metrics
+    metrics, err := client.Metrics().GetOverview(ctx, &shield.DateRangeOptions{
+        From: "2026-02-01",
+        To:   "2026-02-04",
+    })
+    if err != nil {
+        panic(err)
+    }
+    fmt.Printf("Blocked: %d requests\n", metrics.BlockedRequests)
+
+    // Configure bot detection
+    _, err = client.BotDetection(zones.Items[0].ID).Update(ctx, &shield.UpdateBotDetectionRequest{
+        DetectionLevel: "High",
+    })
+    if err != nil {
+        panic(err)
+    }
+}
+```
+
 ## Authentication
 
 Bunny.net uses different API keys for different services:
@@ -172,6 +247,7 @@ Bunny.net uses different API keys for different services:
 | Stream API | Stream Library API Key | Stream library → API tab |
 | Storage Zone Management | Global API Key | Account Settings → API |
 | File Operations | Storage Zone Password | Storage zone → FTP & API Access |
+| Shield API | Global API Key | Account Settings → API |
 
 ## Available Regions
 

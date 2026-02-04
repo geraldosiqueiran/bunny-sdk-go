@@ -90,6 +90,11 @@ func (c *Client) Collections(libraryID int64) CollectionService {
 	return newCollectionService(&streamAdapter{c}, libraryID)
 }
 
+// OEmbed returns an OEmbedService for video embedding.
+func (c *Client) OEmbed() OEmbedService {
+	return newOEmbedService(&streamAdapter{c})
+}
+
 // baseAdapter uses api.bunny.net for library management operations.
 type baseAdapter struct {
 	client *Client

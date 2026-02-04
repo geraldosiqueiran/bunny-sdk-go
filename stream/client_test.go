@@ -1225,3 +1225,407 @@ func TestVideoService_EmptyResponse(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+// TestVideoService_AddOutputCodec tests adding output codec
+func TestVideoService_AddOutputCodec(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			if req.Method != http.MethodPut {
+				t.Errorf("expected PUT, got %s", req.Method)
+			}
+			if !strings.Contains(req.URL.Path, "/outputs/0") {
+				t.Errorf("unexpected path: %s", req.URL.Path)
+			}
+			body := `{"videoId":"vid1","title":"Test"}`
+			return testutil.NewMockResponse(200, body), nil
+		},
+	}
+
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	video, err := client.Videos(123).AddOutputCodec(context.Background(), "vid1", stream.OutputCodecX264)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if video.VideoID != "vid1" {
+		t.Errorf("expected vid1, got %s", video.VideoID)
+	}
+}
+
+// TestVideoService_AddOutputCodecError tests add output codec error handling
+func TestVideoService_AddOutputCodecError(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			return testutil.NewMockResponse(400, `{"Message":"Invalid codec"}`), nil
+		},
+	}
+
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	_, err := client.Videos(123).AddOutputCodec(context.Background(), "vid1", stream.OutputCodecAV1)
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+// TestVideoService_CleanupUnconfiguredResolutions tests cleanup resolutions
+func TestVideoService_CleanupUnconfiguredResolutions(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			if req.Method != http.MethodPost {
+				t.Errorf("expected POST, got %s", req.Method)
+			}
+			if !strings.Contains(req.URL.Path, "/resolutions/cleanup") {
+				t.Errorf("unexpected path: %s", req.URL.Path)
+			}
+			if !strings.Contains(req.URL.RawQuery, "dryRun=true") {
+				t.Errorf("expected dryRun query param, got: %s", req.URL.RawQuery)
+			}
+			body := `{"success":true,"message":"Cleanup complete","statusCode":200}`
+			return testutil.NewMockResponse(200, body), nil
+		},
+	}
+
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	resp, err := client.Videos(123).CleanupUnconfiguredResolutions(context.Background(), "vid1", &stream.CleanupResolutionsOptions{
+		DryRun: true,
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !resp.Success {
+		t.Error("expected success to be true")
+	}
+}
+
+// TestVideoService_GetHeatmapData tests getting heatmap data
+func TestVideoService_GetHeatmapData(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			if req.Method != http.MethodGet {
+				t.Errorf("expected GET, got %s", req.Method)
+			}
+			if !strings.Contains(req.URL.Path, "/play/heatmap") {
+				t.Errorf("unexpected path: %s", req.URL.Path)
+			}
+			body := `{"showHeatmap":true,"enableDRM":false}`
+			return testutil.NewMockResponse(200, body), nil
+		},
+	}
+
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	data, err := client.Videos(123).GetHeatmapData(context.Background(), "vid1", nil)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !data.ShowHeatmap {
+		t.Error("expected showHeatmap to be true")
+	}
+}
+
+// TestVideoService_GetStorageSizeInfo tests getting storage size info
+func TestVideoService_GetStorageSizeInfo(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			if req.Method != http.MethodGet {
+				t.Errorf("expected GET, got %s", req.Method)
+			}
+			if !strings.Contains(req.URL.Path, "/storage") {
+				t.Errorf("unexpected path: %s", req.URL.Path)
+			}
+			body := `{"success":true,"statusCode":200,"data":{"thumbnails":1024,"originals":5000}}`
+			return testutil.NewMockResponse(200, body), nil
+		},
+	}
+
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	resp, err := client.Videos(123).GetStorageSizeInfo(context.Background(), "vid1")
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.Data.Thumbnails != 1024 {
+		t.Errorf("expected thumbnails 1024, got %d", resp.Data.Thumbnails)
+	}
+}
+
+// TestVideoService_Repackage tests video repackage
+func TestVideoService_Repackage(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			if req.Method != http.MethodPost {
+				t.Errorf("expected POST, got %s", req.Method)
+			}
+			if !strings.Contains(req.URL.Path, "/repackage") {
+				t.Errorf("unexpected path: %s", req.URL.Path)
+			}
+			body := `{"videoId":"vid1","title":"Repackaged"}`
+			return testutil.NewMockResponse(200, body), nil
+		},
+	}
+
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	video, err := client.Videos(123).Repackage(context.Background(), "vid1", nil)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if video.VideoID != "vid1" {
+		t.Errorf("expected vid1, got %s", video.VideoID)
+	}
+}
+
+// TestVideoService_Transcribe tests video transcription
+func TestVideoService_Transcribe(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			if req.Method != http.MethodPost {
+				t.Errorf("expected POST, got %s", req.Method)
+			}
+			if !strings.Contains(req.URL.Path, "/transcribe") {
+				t.Errorf("unexpected path: %s", req.URL.Path)
+			}
+			body := `{"success":true,"message":"Transcription queued","statusCode":200}`
+			return testutil.NewMockResponse(200, body), nil
+		},
+	}
+
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	resp, err := client.Videos(123).Transcribe(context.Background(), "vid1", &stream.TranscribeRequest{
+		TargetLanguages: []string{"en", "es"},
+	}, nil)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !resp.Success {
+		t.Error("expected success to be true")
+	}
+}
+
+// TestVideoService_TranscribeWithForce tests transcribe with force option
+func TestVideoService_TranscribeWithForce(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			if !strings.Contains(req.URL.RawQuery, "force=true") {
+				t.Errorf("expected force query param, got: %s", req.URL.RawQuery)
+			}
+			body := `{"success":true,"message":"Transcription queued","statusCode":200}`
+			return testutil.NewMockResponse(200, body), nil
+		},
+	}
+
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	_, err := client.Videos(123).Transcribe(context.Background(), "vid1", nil, &stream.TranscribeOptions{Force: true})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// TestVideoService_TriggerSmartActions tests triggering smart actions
+func TestVideoService_TriggerSmartActions(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			if req.Method != http.MethodPost {
+				t.Errorf("expected POST, got %s", req.Method)
+			}
+			if !strings.Contains(req.URL.Path, "/smart") {
+				t.Errorf("unexpected path: %s", req.URL.Path)
+			}
+			body := `{"success":true,"message":"Smart actions queued","statusCode":202}`
+			return testutil.NewMockResponse(202, body), nil
+		},
+	}
+
+	generateTitle := true
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	resp, err := client.Videos(123).TriggerSmartActions(context.Background(), "vid1", &stream.SmartActionsRequest{
+		GenerateTitle: &generateTitle,
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !resp.Success {
+		t.Error("expected success to be true")
+	}
+}
+
+// TestVideoService_GetResolutionsInfo tests getting resolutions info
+func TestVideoService_GetResolutionsInfo(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			if req.Method != http.MethodGet {
+				t.Errorf("expected GET, got %s", req.Method)
+			}
+			if !strings.HasSuffix(req.URL.Path, "/resolutions") {
+				t.Errorf("unexpected path: %s", req.URL.Path)
+			}
+			body := `{"success":true,"statusCode":200,"data":{"videoId":"vid1","hasOriginal":true}}`
+			return testutil.NewMockResponse(200, body), nil
+		},
+	}
+
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	resp, err := client.Videos(123).GetResolutionsInfo(context.Background(), "vid1")
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !resp.Data.HasOriginal {
+		t.Error("expected hasOriginal to be true")
+	}
+}
+
+// TestOEmbedService_Get tests oEmbed get
+func TestOEmbedService_Get(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			if req.Method != http.MethodGet {
+				t.Errorf("expected GET, got %s", req.Method)
+			}
+			if !strings.Contains(req.URL.Path, "/OEmbed") {
+				t.Errorf("unexpected path: %s", req.URL.Path)
+			}
+			if !strings.Contains(req.URL.RawQuery, "url=") {
+				t.Errorf("expected url query param, got: %s", req.URL.RawQuery)
+			}
+			body := `{"version":"1.0","type":"video","title":"Test Video","width":1920,"height":1080}`
+			return testutil.NewMockResponse(200, body), nil
+		},
+	}
+
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	resp, err := client.OEmbed().Get(context.Background(), &stream.OEmbedOptions{
+		URL:      "https://iframe.mediadelivery.net/embed/123/abc",
+		MaxWidth: 1920,
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.Type != "video" {
+		t.Errorf("expected type video, got %s", resp.Type)
+	}
+}
+
+// TestOEmbedService_GetError tests oEmbed error handling
+func TestOEmbedService_GetError(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			return testutil.NewMockResponse(404, `{"Message":"Video not found"}`), nil
+		},
+	}
+
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	_, err := client.OEmbed().Get(context.Background(), &stream.OEmbedOptions{URL: "invalid"})
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+// TestBuildCleanupResolutionsQuery tests cleanup resolutions query builder
+func TestBuildCleanupResolutionsQuery(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			query := req.URL.RawQuery
+			if !strings.Contains(query, "resolutionsToDelete=720p") {
+				t.Error("expected resolutionsToDelete parameter")
+			}
+			if !strings.Contains(query, "deleteNonConfiguredResolutions=true") {
+				t.Error("expected deleteNonConfiguredResolutions parameter")
+			}
+			if !strings.Contains(query, "deleteOriginal=true") {
+				t.Error("expected deleteOriginal parameter")
+			}
+			if !strings.Contains(query, "deleteMp4Files=true") {
+				t.Error("expected deleteMp4Files parameter")
+			}
+			body := `{"success":true,"statusCode":200}`
+			return testutil.NewMockResponse(200, body), nil
+		},
+	}
+
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	_, _ = client.Videos(123).CleanupUnconfiguredResolutions(context.Background(), "vid1", &stream.CleanupResolutionsOptions{
+		ResolutionsToDelete:            "720p",
+		DeleteNonConfiguredResolutions: true,
+		DeleteOriginal:                 true,
+		DeleteMp4Files:                 true,
+	})
+}
+
+// TestBuildHeatmapDataQuery tests heatmap data query builder
+func TestBuildHeatmapDataQuery(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			query := req.URL.RawQuery
+			if !strings.Contains(query, "token=abc123") {
+				t.Error("expected token parameter")
+			}
+			if !strings.Contains(query, "expires=") {
+				t.Error("expected expires parameter")
+			}
+			body := `{"showHeatmap":true}`
+			return testutil.NewMockResponse(200, body), nil
+		},
+	}
+
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	_, _ = client.Videos(123).GetHeatmapData(context.Background(), "vid1", &stream.HeatmapDataOptions{
+		Token:   "abc123",
+		Expires: 1234567890,
+	})
+}
+
+// TestBuildRepackageQuery tests repackage query builder
+func TestBuildRepackageQuery(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			query := req.URL.RawQuery
+			if !strings.Contains(query, "keepOriginalFiles=true") {
+				t.Error("expected keepOriginalFiles parameter")
+			}
+			body := `{"videoId":"vid1"}`
+			return testutil.NewMockResponse(200, body), nil
+		},
+	}
+
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	_, _ = client.Videos(123).Repackage(context.Background(), "vid1", &stream.RepackageOptions{
+		KeepOriginalFiles: true,
+	})
+}
+
+// TestBuildOEmbedQuery tests oEmbed query builder
+func TestBuildOEmbedQuery(t *testing.T) {
+	mock := &testutil.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			query := req.URL.RawQuery
+			if !strings.Contains(query, "maxWidth=1280") {
+				t.Error("expected maxWidth parameter")
+			}
+			if !strings.Contains(query, "maxHeight=720") {
+				t.Error("expected maxHeight parameter")
+			}
+			if !strings.Contains(query, "token=secret") {
+				t.Error("expected token parameter")
+			}
+			body := `{"type":"video"}`
+			return testutil.NewMockResponse(200, body), nil
+		},
+	}
+
+	client := stream.NewClient("test-key", stream.WithHTTPClient(mock))
+	_, _ = client.OEmbed().Get(context.Background(), &stream.OEmbedOptions{
+		URL:       "https://example.com/video",
+		MaxWidth:  1280,
+		MaxHeight: 720,
+		Token:     "secret",
+		Expires:   9999999999,
+	})
+}
