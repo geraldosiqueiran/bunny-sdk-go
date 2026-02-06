@@ -1,6 +1,6 @@
 # Bunny.net Go SDK
 
-Idiomatic Go SDK for [Bunny.net](https://bunny.net) Stream, Storage, and Shield/WAF APIs.
+Idiomatic Go SDK for [Bunny.net](https://bunny.net) Stream, Storage, Shield/WAF, and Magic Containers APIs. **Zero external dependencies**, pure stdlib, Go 1.23+.
 
 ## Installation
 
@@ -10,272 +10,128 @@ go get github.com/geraldo/bunny-sdk-go
 
 ## Features
 
-- **Stream API**: Videos, Libraries, Collections management
-- **Storage API**: Zone management and file operations
-- **Shield API**: WAF rules, access lists, rate limiting, bot detection, metrics
-- Interface-based design for easy mocking
+- **Stream API** (23 methods): Videos, libraries, collections, captions, analytics
+- **Storage API** (13 methods): Zone management, file uploads/downloads, 9 regions
+- **Shield/WAF API** (50+ methods): WAF rules, access lists, rate limiting, bot detection, metrics
+- **Edge Scripting API** (23 methods): Scripts, deployments, secrets, variables
+- **Magic Containers API** (40+ methods): Applications, registries, volumes, endpoints, autoscaling
+- Zero external dependencies (stdlib only)
+- Interface-based design for easy testing
 - Context support on all operations
 - Functional options pattern
 - Streaming file uploads/downloads (no memory buffering)
-- Typed errors with status codes
+- Typed error hierarchy (NotFoundError, AuthError, RateLimitError)
 
 ## Quick Start
 
 ### Stream API
 
 ```go
-package main
+client := stream.NewClient(os.Getenv("BUNNY_STREAM_API_KEY"))
+videos, err := client.Videos(12345).List(context.Background(), nil)
 
-import (
-    "context"
-    "fmt"
-    "os"
+video, err := client.Videos(12345).Create(context.Background(), &stream.CreateVideoRequest{
+    Title: "My Video",
+})
 
-    "github.com/geraldo/bunny-sdk-go/stream"
-)
-
-func main() {
-    // Use Stream Library API Key (found in library settings)
-    client := stream.NewClient(os.Getenv("BUNNY_STREAM_API_KEY"))
-    ctx := context.Background()
-
-    // List videos in a library
-    videos, err := client.Videos(12345).List(ctx, nil)
-    if err != nil {
-        panic(err)
-    }
-
-    for _, v := range videos.Items {
-        fmt.Printf("Video: %s (%s)\n", v.Title, v.VideoID)
-    }
-
-    // Create a video
-    video, err := client.Videos(12345).Create(ctx, &stream.CreateVideoRequest{
-        Title: "My New Video",
-    })
-    if err != nil {
-        panic(err)
-    }
-    fmt.Printf("Created: %s\n", video.VideoID)
-
-    // Upload video file
-    f, _ := os.Open("video.mp4")
-    defer f.Close()
-
-    err = client.Videos(12345).Upload(ctx, video.VideoID, f)
-    if err != nil {
-        panic(err)
-    }
-}
+f, _ := os.Open("video.mp4")
+defer f.Close()
+err = client.Videos(12345).Upload(context.Background(), video.VideoID, f)
 ```
 
-### Storage API - Zone Management
+### Storage API
 
 ```go
-package main
+// Zone management
+client := storage.NewClient(os.Getenv("BUNNY_API_KEY"))
+zones, err := client.Zones().List(context.Background(), nil)
 
-import (
-    "context"
-    "fmt"
-    "os"
-
-    "github.com/geraldo/bunny-sdk-go/storage"
-)
-
-func main() {
-    // Use Global API Key for zone management
-    client := storage.NewClient(os.Getenv("BUNNY_API_KEY"))
-    ctx := context.Background()
-
-    // List storage zones
-    zones, err := client.Zones().List(ctx, nil)
-    if err != nil {
-        panic(err)
-    }
-
-    for _, z := range zones.Items {
-        fmt.Printf("Zone: %s (Region: %s)\n", z.Name, z.Region)
-    }
-
-    // Create a storage zone
-    zone, err := client.Zones().Create(ctx, &storage.CreateZoneRequest{
-        Name:   "my-new-zone",
-        Region: "de",
-    })
-    if err != nil {
-        panic(err)
-    }
-    fmt.Printf("Created zone: %s (Password: %s)\n", zone.Name, zone.Password)
-}
+// File operations
+fs := storage.NewFileService("zone-name", "password", storage.RegionFalkenstein)
+err = fs.Upload(context.Background(), "path/to/file", fileReader, nil)
+files, err := fs.List(context.Background(), "directory")
 ```
 
-### Storage API - File Operations
+### Shield/WAF API
 
 ```go
-package main
+client := shield.NewClient(os.Getenv("BUNNY_API_KEY"))
+zones, err := client.Zones().List(context.Background())
 
-import (
-    "context"
-    "fmt"
-    "io"
-    "os"
+rateLimit, err := client.RateLimits().Create(context.Background(), &shield.CreateRateLimitRequest{
+    Name:              "API Rate Limit",
+    RequestsPerSecond: 100,
+    ShieldZoneID:      zones.Items[0].ID,
+})
 
-    "github.com/geraldo/bunny-sdk-go/storage"
-)
-
-func main() {
-    // Use Storage Zone Password for file operations
-    fs := storage.NewFileService(
-        "my-zone",                    // zone name
-        os.Getenv("BUNNY_ZONE_PASS"), // zone password
-        storage.RegionFalkenstein,    // region
-    )
-    ctx := context.Background()
-
-    // Upload a file
-    f, _ := os.Open("document.pdf")
-    defer f.Close()
-
-    err := fs.Upload(ctx, "documents/report.pdf", f, nil)
-    if err != nil {
-        panic(err)
-    }
-
-    // List directory
-    files, err := fs.List(ctx, "documents")
-    if err != nil {
-        panic(err)
-    }
-
-    for _, file := range files {
-        fmt.Printf("%s (%d bytes)\n", file.ObjectName, file.Length)
-    }
-
-    // Download a file
-    reader, err := fs.Download(ctx, "documents/report.pdf")
-    if err != nil {
-        panic(err)
-    }
-    defer reader.Close()
-
-    out, _ := os.Create("downloaded.pdf")
-    defer out.Close()
-    io.Copy(out, reader)
-}
+metrics, err := client.Metrics().GetOverview(context.Background(), &shield.DateRangeOptions{
+    From: "2026-02-01",
+    To:   "2026-02-04",
+})
 ```
 
-### Shield API - WAF & Security
+### Edge Scripting API
 
 ```go
-package main
+client := scripting.NewClient(os.Getenv("BUNNY_API_KEY"))
+scripts, err := client.Scripts().List(context.Background(), nil)
 
-import (
-    "context"
-    "fmt"
-    "os"
+script, err := client.Scripts().Create(context.Background(), &scripting.CreateScriptRequest{
+    Name: "my-script",
+})
+```
 
-    "github.com/geraldo/bunny-sdk-go/shield"
-)
+### Magic Containers API
 
-func main() {
-    // Use Global API Key for Shield API
-    client := shield.NewClient(os.Getenv("BUNNY_API_KEY"))
-    ctx := context.Background()
+```go
+client := containers.NewClient(os.Getenv("BUNNY_API_KEY"))
+apps, err := client.Applications().List(context.Background(), nil)
 
-    // List Shield zones
-    zones, err := client.Zones().List(ctx)
-    if err != nil {
-        panic(err)
-    }
+app, err := client.Applications().Create(context.Background(), &containers.CreateApplicationRequest{
+    Name:        "my-app",
+    RuntimeType: containers.RuntimeTypeShared,
+})
 
-    for _, z := range zones.Items {
-        fmt.Printf("Zone: %s (%s)\n", z.Name, z.ID)
-    }
-
-    // Create a rate limit rule
-    rateLimit, err := client.RateLimits().Create(ctx, &shield.CreateRateLimitRequest{
-        Name:              "API Rate Limit",
-        Path:              "/api/*",
-        RequestsPerSecond: 100,
-        ShieldZoneID:      zones.Items[0].ID,
-        Action:            "Block",
-        IsActive:          true,
-    })
-    if err != nil {
-        panic(err)
-    }
-    fmt.Printf("Created rate limit: %s\n", rateLimit.Name)
-
-    // Add IP to access list
-    entry, err := client.AccessLists(zones.Items[0].ID).Add(ctx, &shield.AddAccessListEntryRequest{
-        Type:    "IP",
-        Value:   "192.168.1.100",
-        Action:  "Allow",
-        Comment: "Office IP",
-    })
-    if err != nil {
-        panic(err)
-    }
-    fmt.Printf("Added to access list: %s\n", entry.Value)
-
-    // Get security metrics
-    metrics, err := client.Metrics().GetOverview(ctx, &shield.DateRangeOptions{
-        From: "2026-02-01",
-        To:   "2026-02-04",
-    })
-    if err != nil {
-        panic(err)
-    }
-    fmt.Printf("Blocked: %d requests\n", metrics.BlockedRequests)
-
-    // Configure bot detection
-    _, err = client.BotDetection(zones.Items[0].ID).Update(ctx, &shield.UpdateBotDetectionRequest{
-        DetectionLevel: "High",
-    })
-    if err != nil {
-        panic(err)
-    }
-}
+err = client.Applications().Deploy(context.Background(), app.ID)
 ```
 
 ## Authentication
 
-Bunny.net uses different API keys for different services:
-
 | Service | API Key Type | Where to Find |
 |---------|--------------|---------------|
-| Stream API | Stream Library API Key | Stream library → API tab |
-| Storage Zone Management | Global API Key | Account Settings → API |
-| File Operations | Storage Zone Password | Storage zone → FTP & API Access |
-| Shield API | Global API Key | Account Settings → API |
+| Stream API | Stream Library API Key | Library settings → API tab |
+| Storage Zones | Global API Key | Account Settings → API |
+| File Operations | Storage Zone Password | Zone → FTP & API Access |
+| Shield/WAF | Global API Key | Account Settings → API |
+| Scripting | Global API Key | Account Settings → API |
+| Containers | Global API Key | Account Settings → API |
 
-## Available Regions
+## Storage Regions
 
-For Storage file operations:
-
-| Region | Constant | Location |
-|--------|----------|----------|
-| `de` | `RegionFalkenstein` | Germany (default) |
-| `ny` | `RegionNewYork` | New York |
-| `la` | `RegionLosAngeles` | Los Angeles |
-| `sg` | `RegionSingapore` | Singapore |
-| `syd` | `RegionSydney` | Sydney |
-| `se` | `RegionStockholm` | Stockholm |
-| `br` | `RegionSaoPaulo` | Sao Paulo |
-| `jh` | `RegionJohannesburg` | Johannesburg |
-| `uk` | `RegionLondon` | London |
+```
+RegionFalkenstein  "storage"  Germany (default)
+RegionNewYork      "ny"       New York
+RegionLosAngeles   "la"       Los Angeles
+RegionSingapore    "sg"       Singapore
+RegionSydney       "syd"      Sydney
+RegionStockholm    "se"       Stockholm
+RegionSaoPaulo     "br"       Sao Paulo
+RegionJohannesburg "jh"       Johannesburg
+RegionLondon       "uk"       London
+```
 
 ## Error Handling
 
-All errors include the HTTP status code:
-
 ```go
-video, err := client.Videos(123).Get(ctx, "nonexistent")
+video, err := client.Videos(123).Get(ctx, "video-id")
 if err != nil {
-    // Check error type
     if apiErr, ok := err.(*stream.APIError); ok {
-        if apiErr.StatusCode == 404 {
-            fmt.Println("Video not found")
+        if apiErr.IsNotFound() {
+            // Handle 404
+        } else if apiErr.IsAuthError() {
+            // Handle 401/403
+        } else if apiErr.IsRetryable() {
+            // Implement retry logic
         }
     }
 }
@@ -283,7 +139,7 @@ if err != nil {
 
 ## Testing
 
-The SDK uses interfaces for HTTP clients, making it easy to mock:
+Mock the HTTP client for unit tests:
 
 ```go
 mock := &testutil.MockHTTPClient{
@@ -291,9 +147,16 @@ mock := &testutil.MockHTTPClient{
         return testutil.NewMockResponse(200, `{"videoId":"test"}`), nil
     },
 }
-
 client := stream.NewClient("key", stream.WithHTTPClient(mock))
 ```
+
+## Documentation
+
+- **[Codebase Summary](./docs/codebase-summary.md)** - Directory structure, packages, architecture patterns
+- **[Code Standards](./docs/code-standards.md)** - Naming conventions, style guidelines, testing patterns
+- **[System Architecture](./docs/system-architecture.md)** - Request flow, error handling, service design
+- **[Project Overview & PDR](./docs/project-overview-pdr.md)** - Goals, features, requirements, success criteria
+- **[Project Roadmap](./docs/project-roadmap.md)** - Milestones, timeline, planned features
 
 ## License
 
