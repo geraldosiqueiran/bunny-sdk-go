@@ -77,16 +77,16 @@ type MetaTag struct {
 
 // Library represents a video library in Bunny Stream.
 type Library struct {
-	LibraryID                int64     `json:"libraryId"`
-	Name                     string    `json:"name"`
-	DateCreated              internal.BunnyTime `json:"dateCreated"`
-	StorageUsed              int64     `json:"storageUsed"`
-	StorageLimitGB           int64     `json:"storageLimitGB,omitempty"`
-	VideoCacheExpirationDays int       `json:"videoCacheExpirationDays"`
-	VideoCount               int       `json:"videoCount,omitempty"`
-	Collections              int       `json:"collections,omitempty"`
-	Region                   string    `json:"region,omitempty"`
-	ReplicationRegions       []string  `json:"replicationRegions,omitempty"`
+	LibraryID                int64              `json:"Id"`
+	Name                     string             `json:"Name"`
+	DateCreated              internal.BunnyTime `json:"DateCreated"`
+	StorageUsed              int64              `json:"StorageUsage"`
+	StorageLimitGB           int64              `json:"storageLimitGB,omitempty"`
+	VideoCacheExpirationDays int                `json:"videoCacheExpirationDays"`
+	VideoCount               int                `json:"VideoCount,omitempty"`
+	Collections              int                `json:"collections,omitempty"`
+	Region                   string             `json:"region,omitempty"`
+	ReplicationRegions       []string           `json:"ReplicationRegions,omitempty"`
 }
 
 // Collection represents a collection of videos within a library.
