@@ -1,7 +1,11 @@
 // Package stream provides types and services for the Bunny.net Stream API.
 package stream
 
-import "github.com/geraldo/bunny-sdk-go/internal"
+import (
+	"encoding/json"
+
+	"github.com/geraldo/bunny-sdk-go/internal"
+)
 
 // VideoState represents the processing state of a video.
 type VideoState string
@@ -45,7 +49,7 @@ type Video struct {
 	Chapters             []Chapter  `json:"chapters,omitempty"`
 	Captions             []Caption  `json:"captions,omitempty"`
 	MetaTags             []MetaTag  `json:"metaTags,omitempty"`
-	TranscodingMessages  []string   `json:"transcodingMessages,omitempty"`
+	TranscodingMessages  []json.RawMessage `json:"transcodingMessages,omitempty"`
 }
 
 // Moment represents a labeled moment in a video timeline.
