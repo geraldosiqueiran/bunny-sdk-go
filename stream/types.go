@@ -25,7 +25,7 @@ const (
 
 // Video represents a video in a Bunny Stream library.
 type Video struct {
-	VideoID              string     `json:"videoId"`
+	VideoID              string     `json:"guid"`
 	VideoLibraryID       int64      `json:"videoLibraryId"`
 	Title                string     `json:"title"`
 	Description          string     `json:"description,omitempty"`
