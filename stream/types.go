@@ -79,6 +79,8 @@ type MetaTag struct {
 type Library struct {
 	LibraryID                int64              `json:"Id"`
 	Name                     string             `json:"Name"`
+	ApiKey                   string             `json:"ApiKey"`
+	ReadOnlyApiKey           string             `json:"ReadOnlyApiKey"`
 	DateCreated              internal.BunnyTime `json:"DateCreated"`
 	StorageUsed              int64              `json:"StorageUsage"`
 	StorageLimitGB           int64              `json:"storageLimitGB,omitempty"`
@@ -87,6 +89,8 @@ type Library struct {
 	Collections              int                `json:"collections,omitempty"`
 	Region                   string             `json:"region,omitempty"`
 	ReplicationRegions       []string           `json:"ReplicationRegions,omitempty"`
+	PullZoneId               int64              `json:"PullZoneId,omitempty"`
+	StorageZoneId            int64              `json:"StorageZoneId,omitempty"`
 }
 
 // Collection represents a collection of videos within a library.
