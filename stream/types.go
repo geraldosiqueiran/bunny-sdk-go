@@ -31,7 +31,7 @@ type Video struct {
 	Description          string     `json:"description,omitempty"`
 	UploadDate           internal.BunnyTime  `json:"uploadDate"`
 	Views                int64      `json:"views"`
-	Duration             int        `json:"duration"`
+	Duration             int        `json:"length"`
 	Width                int        `json:"width,omitempty"`
 	Height               int        `json:"height,omitempty"`
 	State                VideoState `json:"state"`
